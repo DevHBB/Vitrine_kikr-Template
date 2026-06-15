@@ -362,6 +362,19 @@ function ensure_tables(): void {
     try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN number VARCHAR(20) NOT NULL DEFAULT '' AFTER discipline"); } catch(Exception $e) {}
     try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN results TEXT AFTER bio"); } catch(Exception $e) {}
 
+    // Table OTP connexion client
+    if (!$pdo->query("SHOW TABLES LIKE 'kk_client_otp'")->fetchColumn()) {
+        $pdo->exec("CREATE TABLE kk_client_otp (
+            id         INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            email      VARCHAR(200) NOT NULL,
+            code       VARCHAR(6)   NOT NULL,
+            expires_at DATETIME     NOT NULL,
+            used       TINYINT(1)   NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
     // Table messages contact
     if (!$pdo->query("SHOW TABLES LIKE 'kk_messages'")->fetchColumn()) {
         $pdo->exec("CREATE TABLE kk_messages (

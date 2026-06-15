@@ -498,7 +498,7 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
       </div>
 
       <!-- Paiement -->
-      <input type="hidden" name="payment_method" id="shop_pay_method" value="livraison">
+      <input type="hidden" name="payment_method" id="shop_pay_method" value="<?= get_setting('payment_allow_onsite','1')==='1' ? 'livraison' : (get_setting('paypal_client_id','') ? 'paypal' : 'virement') ?>">
       <div style="margin-top:14px;">
         <div style="font-size:11px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Mode de paiement</div>
 
@@ -508,9 +508,10 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
             <span style="font-size:20px;">🅿️</span>
             <div><div style="font-size:13px;font-weight:700;">PayPal</div><div style="font-size:11px;color:#888;">Compte PayPal ou carte</div></div>
           </div>
-          <div id="paypal-box-shop" style="display:none;margin-top:12px;min-height:50px;">
-            <div id="paypal-btn-shop"></div>
-          </div>
+        </div>
+        <!-- Boutons PayPal TOUJOURS dans le DOM visible, juste caché par wrapper -->
+        <div id="paypal-box-shop" style="display:none;margin:4px 0 8px;border-radius:10px;overflow:hidden;min-height:50px;">
+          <div id="paypal-btn-shop"></div>
         </div>
         <?php endif; ?>
 
@@ -534,11 +535,14 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
         <?php endif; ?>
 
         <?php if(get_setting('payment_allow_onsite','1')==='1'): ?>
-<div class="pay-opt sel" id="opt-livraison" onclick="shopSelPay('livraison')">
+        <div class="pay-opt sel" id="opt-livraison" onclick="shopSelPay('livraison')">
           <span style="font-size:20px;">🤝</span>
-          <div><div style="font-size:13px;font-weight:700;">Paiement à la livraison / retrait</div>
-<?php endif; ?><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;">Paiement à la livraison / retrait</div>
+            <div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div>
+          </div>
         </div>
+        <?php endif; ?>
       </div>
 
       <!-- Total -->
@@ -585,14 +589,14 @@ function shopSelPay(method) {
   document.querySelectorAll('.pay-opt').forEach(function(o){ o.classList.remove('sel'); });
   var el = document.getElementById('opt-' + method);
   if (el) el.classList.add('sel');
-  // Afficher zones spécifiques
   var pp  = document.getElementById('paypal-box-shop');
   var str = document.getElementById('stripe-box-shop');
   var btn = document.getElementById('co-submit-btn');
   if (pp)  pp.style.display  = method === 'paypal' ? 'block' : 'none';
   if (str) str.style.display = method === 'stripe' ? 'block' : 'none';
-  // Pour PayPal : cacher le bouton submit (les boutons PayPal suffisent)
   if (btn) btn.style.display = method === 'paypal' ? 'none'  : 'block';
+  // Initialiser PayPal maintenant que le div est visible
+  if (method === 'paypal') { initPayPal(); }
 }
 </script>
 
@@ -727,8 +731,10 @@ document.getElementById('checkout-form')?.addEventListener('submit', async funct
 });
 <?php endif; ?>
 <?php if($paypal_cid): ?>
-window.addEventListener('load', function() {
-  if (typeof paypal === 'undefined') return;
+var ppRendered = false;
+function initPayPal() {
+  if (ppRendered || typeof paypal === 'undefined') return;
+  ppRendered = true;
   paypal.Buttons({
     createOrder: function(data, actions) {
       // Valider le formulaire d'abord
@@ -760,7 +766,10 @@ window.addEventListener('load', function() {
       alert('Erreur PayPal. Veuillez choisir un autre moyen de paiement.');
     }
   }).render('#paypal-btn-shop');
-});
+}
+// Tenter d'init au chargement
+if (document.readyState === 'complete') { initPayPal(); }
+else { window.addEventListener('load', initPayPal); }
 <?php endif; ?>
 </script>
 <?php endif; ?>

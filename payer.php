@@ -192,11 +192,9 @@ $bank_iban  = get_setting('bank_iban', '');
     </div>
 
     <!-- PayPal boutons -->
-    <div id="paypal-box" style="display:none;margin-bottom:14px;">
-      <div id="paypal-btn-container" style="min-height:45px;"></div>
-      <?php if(!$paypal_cid): ?>
-      <div style="background:#fef9c3;border-radius:8px;padding:10px;font-size:12px;color:#854d0e;">⚠️ PayPal non configuré — allez dans Admin → Paiement pour ajouter vos clés.</div>
-      <?php endif; ?>
+    <!-- PayPal box - toujours dans le DOM, jamais caché au moment du render -->
+    <div id="paypal-box" style="display:none;margin:4px 0 12px;border-radius:10px;overflow:hidden;min-height:45px;">
+      <div id="paypal-btn-container"></div>
     </div>
 
     <button type="submit" class="pay-btn" id="pay-btn">Valider le paiement</button>
@@ -211,12 +209,22 @@ $bank_iban  = get_setting('bank_iban', '');
 <?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
 <script>
 function selM(lbl, method) {
-  document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('sel'));
+  document.querySelectorAll('.pay-method').forEach(function(m){ m.classList.remove('sel'); });
   lbl.classList.add('sel');
   lbl.querySelector('input').checked = true;
-  document.getElementById('stripe-box').style.display  = method === 'stripe'  ? 'block' : 'none';
-  document.getElementById('paypal-box').style.display  = method === 'paypal'  ? 'block' : 'none';
-  document.getElementById('pay-btn').style.display     = method === 'paypal'  ? 'none'  : 'block';
+  document.getElementById('stripe-box').style.display = method === 'stripe'  ? 'block' : 'none';
+  document.getElementById('paypal-box').style.display = method === 'paypal'  ? 'block' : 'none';
+  document.getElementById('pay-btn').style.display    = method === 'paypal'  ? 'none'  : 'block';
+  var lm  = document.getElementById('livraison-msg');
+  if (lm) lm.style.display = method === 'livraison' ? 'block' : 'none';
+  var btn = document.getElementById('pay-btn');
+  if (btn) {
+    if (method === 'livraison')     btn.textContent = 'Je paierai en main propre →';
+    else if (method === 'virement') btn.textContent = 'Confirmer le virement →';
+    else                            btn.textContent = 'Valider le paiement';
+  }
+  // Init PayPal seulement quand le div est visible
+  if (method === 'paypal') { initPayerPayPal(); }
 }
 <?php if($stripe_pk): ?>
 var stripe = Stripe('<?= h($stripe_pk) ?>');
@@ -234,14 +242,25 @@ document.getElementById('pay-form').addEventListener('submit', async function(e)
 });
 <?php endif; ?>
 <?php if($paypal_cid): ?>
-paypal.Buttons({
-  createOrder: (d,a) => a.order.create({purchase_units:[{amount:{value:'<?= number_format($amount,2,'.','')?>'}}]}),
-  onApprove: (d,a) => a.order.capture().then(details => {
-    var f=document.getElementById('pay-form');
-    f.insertAdjacentHTML('beforeend','<input type="hidden" name="payment_method" value="paypal"><input type="hidden" name="paypal_order_id" value="'+d.orderID+'">');
-    f.submit();
-  })
-}).render('#paypal-btn-container');
+var payerPPRendered = false;
+function initPayerPayPal() {
+  if (payerPPRendered || typeof paypal === 'undefined') return;
+  payerPPRendered = true;
+  paypal.Buttons({
+    createOrder: function(d,a) {
+      return a.order.create({purchase_units:[{amount:{value:'<?= number_format($amount,2,'.','')?>'}}]});
+    },
+    onApprove: function(d,a) {
+      return a.order.capture().then(function(details) {
+        var f = document.getElementById('pay-form');
+        var i1 = document.createElement('input'); i1.type='hidden'; i1.name='payment_method'; i1.value='paypal';
+        var i2 = document.createElement('input'); i2.type='hidden'; i2.name='paypal_order_id'; i2.value=d.orderID;
+        f.appendChild(i1); f.appendChild(i2); f.submit();
+      });
+    },
+    onError: function(e) { alert('Erreur PayPal. Choisissez un autre mode.'); }
+  }).render('#paypal-btn-container');
+}
 <?php endif; ?>
 </script>
 
