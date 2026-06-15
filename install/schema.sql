@@ -404,3 +404,23 @@ CREATE TABLE IF NOT EXISTS `kk_legal_pages` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `slug` (`slug`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- SHOP
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `kk_products` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `position`    TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `slug`        VARCHAR(200) NOT NULL DEFAULT '',
+  `name`        VARCHAR(300) NOT NULL DEFAULT '',
+  `description` TEXT,
+  `price`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `price_promo` DECIMAL(10,2) DEFAULT NULL,
+  `images`      TEXT,
+  `category`    VARCHAR(100) NOT NULL DEFAULT '',
+  `stock`       INT NOT NULL DEFAULT -1,
+  `active`      TINYINT(1) NOT NULL DEFAULT 1,
+  `featured`    TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

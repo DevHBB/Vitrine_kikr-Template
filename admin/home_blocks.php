@@ -252,7 +252,12 @@ $cur_gallery = $cur_type === 'gallery' ? jd($eb['content'] ?? '[]', []) : [];
           <div class="fgrp">
             <label>Nombre de colonnes</label>
             <select name="gallery_cols">
-              <?php foreach([2,3,4] as $n): ?><option value="<?= $n ?>" <?= (jd($eb['extra']??'{}',['cols'=>3])['cols']==$n)?'selected':''?>><?= $n ?> colonnes</option><?php endforeach; ?>
+              <?php
+              $gallery_extra = jd($eb['extra'] ?? '{}', ['cols'=>3]);
+              $gallery_cols_cur = isset($gallery_extra['cols']) ? (int)$gallery_extra['cols'] : 3;
+              foreach([2,3,4] as $n): ?>
+              <option value="<?= $n ?>" <?= $gallery_cols_cur==$n?'selected':''?>><?= $n ?> colonnes</option>
+              <?php endforeach; ?>
             </select>
           </div>
           <div class="fgrp">

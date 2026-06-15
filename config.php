@@ -264,6 +264,51 @@ function ensure_tables(): void {
         seed_legal_pages($pdo);
     }
 
+    // Table produits shop
+    if (!$pdo->query("SHOW TABLES LIKE 'kk_products'")->fetchColumn()) {
+        $pdo->exec("CREATE TABLE kk_products (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            position TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            slug VARCHAR(200) NOT NULL DEFAULT '',
+            name VARCHAR(300) NOT NULL DEFAULT '',
+            description TEXT,
+            price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            price_promo DECIMAL(10,2) DEFAULT NULL,
+            images TEXT,
+            category VARCHAR(100) NOT NULL DEFAULT '',
+            stock INT NOT NULL DEFAULT -1,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            featured TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY slug (slug)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    // Table produits shop
+    if (!$pdo->query("SHOW TABLES LIKE 'kk_products'")->fetchColumn()) {
+        $pdo->exec("CREATE TABLE kk_products (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            position TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            slug VARCHAR(200) NOT NULL DEFAULT '',
+            name VARCHAR(300) NOT NULL DEFAULT '',
+            description TEXT,
+            price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            price_promo DECIMAL(10,2) DEFAULT NULL,
+            images TEXT,
+            category VARCHAR(100) NOT NULL DEFAULT '',
+            stock INT NOT NULL DEFAULT -1,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            featured TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY slug (slug)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    // Colonnes pilot
+    try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN sponsor_logo VARCHAR(500) NOT NULL DEFAULT '' AFTER photo"); } catch(Exception $e) {}
+    try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN number VARCHAR(20) NOT NULL DEFAULT '' AFTER discipline"); } catch(Exception $e) {}
+    try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN results TEXT AFTER bio"); } catch(Exception $e) {}
+
     // Colonnes prix sur appointments
         try { $pdo->exec("ALTER TABLE kk_appointments ADD COLUMN price_estimate DECIMAL(10,2) DEFAULT NULL"); } catch(Exception $e) {}
         try { $pdo->exec("ALTER TABLE kk_appointments ADD COLUMN price_final DECIMAL(10,2) DEFAULT NULL"); } catch(Exception $e) {}
