@@ -85,6 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
                $mmarq,$mmodl,$mannee?:null,$svc_lb,
                $slot_d?:null,$slot_t?:null,$duree,$notes,$fiche_url,$priority]);
 
+        // Récupérer l'ID immédiatement après l'INSERT
+        $new_rdv_id = (int)db()->lastInsertId();
+
+        // Paiement auto si activé (indépendant des notifs email)
+        $pay_enabled  = get_setting('payment_rdv_enabled','0') === '1';
+        $pay_mode_rdv = ps('payment_rdv_mode','choice');
+        $pay_link_auto = '';
+        if ($pay_enabled && $pay_mode_rdv === 'now' && $new_rdv_id > 0) {
+            $pay_link_auto = create_rdv_payment_link($new_rdv_id, 0);
+        }
+
         $admin_email = get_setting('site_email');
         if ($admin_email && ps('notif_email','1')==='1') {
             $pref  = $priority ? '[🏆 Sponsorisé] ' : '';
@@ -116,19 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
         }
         if (ps('notif_email','1')==='1') {
             $sname = get_setting('site_name');
-
-            // RDV ID fraichement inséré
-            $new_rdv_id = (int)db()->lastInsertId();
-
-            // Paiement automatique selon les paramètres
-            $pay_enabled  = get_setting('payment_rdv_enabled','0') === '1';
-            $pay_mode_rdv = ps('payment_rdv_mode','choice');
-            $pay_link_auto = '';
-
-            if ($pay_enabled && $pay_mode_rdv === 'now') {
-                // Envoyer le lien de paiement immédiatement avec la demande
-                $pay_link_auto = create_rdv_payment_link($new_rdv_id, 0);
-            }
 
             if ($pay_link_auto) {
                 $subject = "Finalisez votre RDV — $sname";

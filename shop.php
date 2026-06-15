@@ -498,18 +498,45 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
       </div>
 
       <!-- Paiement -->
+      <input type="hidden" name="payment_method" id="shop_pay_method" value="livraison">
       <div style="margin-top:14px;">
         <div style="font-size:11px;font-weight:800;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Mode de paiement</div>
-        <?php if($stripe_pk): ?>
-        <div class="pay-opt" onclick="selPay(this,'stripe')"><input type="radio" name="payment_method" value="stripe" style="display:none;"> <span style="font-size:18px;">💳</span> <div><div style="font-size:13px;font-weight:700;">Carte bancaire</div><div style="font-size:11px;color:#aaa;">Visa, Mastercard — Stripe sécurisé</div></div><span style="margin-left:auto;font-size:10px;color:#aaa;">🔒</span></div>
-        <?php endif; ?>
+
         <?php if($paypal_cid): ?>
-        <div class="pay-opt" onclick="selPay(this,'paypal')"><input type="radio" name="payment_method" value="paypal" style="display:none;"> <span style="font-size:18px;">🅿️</span> <div><div>PayPal</div></div></div>
+        <div class="pay-opt" id="opt-paypal" onclick="shopSelPay('paypal')" style="flex-direction:column;align-items:stretch;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:20px;">🅿️</span>
+            <div><div style="font-size:13px;font-weight:700;">PayPal</div><div style="font-size:11px;color:#888;">Compte PayPal ou carte</div></div>
+          </div>
+          <div id="paypal-box-shop" style="display:none;margin-top:12px;min-height:50px;">
+            <div id="paypal-btn-shop"></div>
+          </div>
+        </div>
         <?php endif; ?>
+
+        <?php if($stripe_pk): ?>
+        <div class="pay-opt" id="opt-stripe" onclick="shopSelPay('stripe')">
+          <span style="font-size:20px;">💳</span>
+          <div><div style="font-size:13px;font-weight:700;">Carte bancaire</div><div style="font-size:11px;color:#888;">Visa, Mastercard — Stripe sécurisé</div></div>
+          <span style="margin-left:auto;font-size:10px;color:#aaa;background:#f5f5f3;padding:2px 6px;border-radius:4px;">🔒</span>
+        </div>
+        <div id="stripe-box-shop" style="display:none;margin:0 0 8px;border:1.5px solid #e8e8e8;border-radius:10px;padding:14px;">
+          <div id="stripe-el-shop"></div>
+          <div id="stripe-err-shop" style="color:#dc2626;font-size:12px;margin-top:5px;"></div>
+        </div>
+        <?php endif; ?>
+
         <?php if($bank_iban): ?>
-        <div class="pay-opt" onclick="selPay(this,'virement')"><input type="radio" name="payment_method" value="virement" style="display:none;"> <span style="font-size:18px;">🏦</span> <div><div>Virement bancaire</div><div style="font-size:11px;color:#aaa;">IBAN reçu par email</div></div></div>
+        <div class="pay-opt" id="opt-virement" onclick="shopSelPay('virement')">
+          <span style="font-size:20px;">🏦</span>
+          <div><div style="font-size:13px;font-weight:700;">Virement bancaire</div><div style="font-size:11px;color:#888;">IBAN reçu par email</div></div>
+        </div>
         <?php endif; ?>
-        <div class="pay-opt sel" id="pay-livraison" onclick="selPay(this,'livraison')"><input type="radio" name="payment_method" value="livraison" checked style="display:none;"> <span style="font-size:18px;">🤝</span> <div><div>Paiement à la livraison / retrait</div></div></div>
+
+        <div class="pay-opt sel" id="opt-livraison" onclick="shopSelPay('livraison')">
+          <span style="font-size:20px;">🤝</span>
+          <div><div style="font-size:13px;font-weight:700;">Paiement à la livraison / retrait</div><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
+        </div>
       </div>
 
       <!-- Total -->
@@ -549,21 +576,19 @@ function updateShipping(v) {
   // sync aussi le select
   document.querySelectorAll('[name="shipping"]').forEach(s => { if(s !== document.querySelector('[name="shipping"]')) s.value = v; });
 }
-function selPay(method) {
-  // Mettre à jour le champ caché
-  document.getElementById('payment_method_input').value = method;
-  // Visuels
-  document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('sel'));
+function shopSelPay(method) {
+  document.getElementById('shop_pay_method').value = method;
+  document.querySelectorAll('.pay-opt').forEach(function(o){ o.classList.remove('sel'); });
   var el = document.getElementById('opt-' + method);
   if (el) el.classList.add('sel');
-  // Afficher/cacher les zones spécifiques
-  var ppWrap = document.getElementById('paypal-btn-wrap');
-  var strBox = document.getElementById('stripe-box');
-  var subBtn = document.getElementById('co-submit-btn');
-  if (ppWrap) ppWrap.style.display = method === 'paypal'  ? 'block' : 'none';
-  if (strBox) strBox.style.display = method === 'stripe'  ? 'block' : 'none';
-  // Cacher le bouton submit pour PayPal (les boutons PayPal le remplacent)
-  if (subBtn) subBtn.style.display = method === 'paypal'  ? 'none'  : 'block';
+  // Afficher zones spécifiques
+  var pp  = document.getElementById('paypal-box-shop');
+  var str = document.getElementById('stripe-box-shop');
+  var btn = document.getElementById('co-submit-btn');
+  if (pp)  pp.style.display  = method === 'paypal' ? 'block' : 'none';
+  if (str) str.style.display = method === 'stripe' ? 'block' : 'none';
+  // Pour PayPal : cacher le bouton submit (les boutons PayPal suffisent)
+  if (btn) btn.style.display = method === 'paypal' ? 'none'  : 'block';
 }
 </script>
 
@@ -731,7 +756,7 @@ window.addEventListener('load', function() {
       console.error('PayPal error:', err);
       alert('Erreur PayPal. Veuillez choisir un autre moyen de paiement.');
     }
-  }).render('#paypal-button-container-shop');
+  }).render('#paypal-btn-shop');
 });
 <?php endif; ?>
 </script>

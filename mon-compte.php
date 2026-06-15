@@ -58,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_otp'])) {
             $from
         );
 
-        // REDIRECTION PRG — l'email est dans l'URL, pas dans la session
-        $safe = urlencode(base64_encode($email));
+        // REDIRECTION PRG — base64url safe (pas de +/=/ qui causent problèmes dans URL)
+        $safe = rtrim(strtr(base64_encode($email), '+/', '-_'), '=');
         header('Location: ' . BASE_URL . '/mon-compte.php?step=verify&e=' . $safe . '&sent=1');
         exit;
     }
@@ -70,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_otp'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp'])) {
     // Email : champ hidden en priorité absolue (POST est fiable, session ne l'est pas)
     $email_b64 = trim($_POST['email_b64'] ?? $_GET['e'] ?? '');
-    $email     = strtolower(trim(base64_decode($email_b64) ?: ''));
+    // Décoder base64url safe (inverse de strtr+rtrim de l'envoi)
+    $email = strtolower(trim(base64_decode(strtr($email_b64, '-_', '+/') . str_repeat('=', (4 - strlen($email_b64) % 4) % 4)) ?: ''));
     $code      = preg_replace('/\D/', '', trim($_POST['code'] ?? ''));
 
     if (!$email) {
@@ -143,8 +144,9 @@ if (!empty($_SESSION['client_email'])) {
     $step = 'account';
 } elseif (isset($_GET['step']) && $_GET['step'] === 'verify') {
     $step      = 'verify';
-    $email_b64 = $_GET['e'] ?? '';
-    $email_disp = base64_decode($email_b64 ?: '') ?: '?';
+    $email_b64  = $_GET['e'] ?? '';
+    $_b64clean  = strtr($email_b64, '-_', '+/') . str_repeat('=', (4 - strlen($email_b64) % 4) % 4);
+    $email_disp = base64_decode($_b64clean) ?: '?';
 } else {
     $step = 'email';
 }
@@ -266,7 +268,7 @@ $statuses = [
 
     <!-- Renvoyer le code -->
     <form method="POST" action="<?= BASE_URL ?>/mon-compte.php" style="margin-top:10px;">
-      <input type="hidden" name="email" value="<?= h(base64_decode($email_b64 ?? '') ?: '') ?>">
+      <input type="hidden" name="email" value="<?= h(base64_decode(strtr($email_b64 ?? '', '-_', '+/') . str_repeat('=', (4 - strlen($email_b64 ?? '') % 4) % 4)) ?: '') ?>">
       <button type="submit" name="send_otp" value="1" class="mc-back">↻ Renvoyer le code</button>
     </form>
     <a href="<?= BASE_URL ?>/mon-compte.php" class="mc-back" style="display:block;margin-top:4px;">← Changer d'email</a>
