@@ -199,3 +199,4 @@ function showSmsFields(v) {
 }
 </script>
 <?php require_once __DIR__ . '/layout_end.php'; ?>
+<?php // Appended - handled in save above ?>

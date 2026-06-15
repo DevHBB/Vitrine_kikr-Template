@@ -15,12 +15,13 @@ $s->execute([$token]);
 $rdv = $s->fetch();
 
 if (!$rdv) {
-    $error = 'Lien invalide ou expiré.';
+    $error = 'Lien invalide.';
 } elseif ($rdv['payment_status'] === 'paid') {
     $error = 'Ce paiement a déjà été effectué. Merci !';
 } else {
     // Utiliser le prix final si dispo, sinon estimation, sinon GET
     $amount = (float)($rdv['price_final'] ?? $rdv['price_estimate'] ?? $amount);
+    if ($amount <= 0 && isset($_GET['a'])) $amount = (float)$_GET['a'];
 }
 
 $success = false;

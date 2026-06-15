@@ -76,39 +76,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_otp'])) {
 
 // ---- ÉTAPE 2 : Vérification code OTP ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp'])) {
-    // Fallback : si session perdue, récupérer l'email depuis le champ hidden
-    $email = $_SESSION['otp_email'] ?? trim($_POST['otp_email_fallback'] ?? '');
-    if ($email) $_SESSION['otp_email'] = $email; // Remettre en session si absent
-    $code  = trim(str_replace([' ','-'], '', $_POST['code'] ?? ''));
+    // Email depuis POST (champ hidden) en priorité, session en fallback
+    $email = trim($_POST['otp_email_fallback'] ?? '') ?: ($_SESSION['otp_email'] ?? '');
+    $code  = trim(str_replace([' ','-','.'], '', $_POST['code'] ?? ''));
 
-    $s = db()->prepare("SELECT * FROM kk_client_otp WHERE email=? AND code=? AND used=0 AND expires_at > NOW()");
-    $s->execute([$email, $code]);
-    $otp = $s->fetch();
-
-    if (!$otp) {
-        $error = 'Code incorrect ou expiré. Recommencez.';
-        $step  = 'verify';
+    if (!$email || !$code) {
+        $error = 'Email ou code manquant. Recommencez depuis le début.';
+        $step  = 'email';
     } else {
-        // Invalider le code
-        db()->prepare("UPDATE kk_client_otp SET used=1 WHERE id=?")->execute([$otp['id']]);
+        // Vérifier uniquement en base de données (pas de dépendance à la session)
+        $s = db()->prepare("SELECT * FROM kk_client_otp WHERE email=? AND code=? AND used=0 AND expires_at > NOW() LIMIT 1");
+        $s->execute([$email, $code]);
+        $otp = $s->fetch();
 
-        // Créer ou retrouver le client
-        $sc = db()->prepare("SELECT id FROM kk_clients WHERE email=? LIMIT 1");
-        $sc->execute([$email]);
-        $cid = $sc->fetchColumn();
-        if (!$cid) {
-            db()->prepare("INSERT INTO kk_clients(email,name,type) VALUES(?,?,?)")
-               ->execute([$email, '', 'particulier']);
-            $cid = (int)db()->lastInsertId();
+        if (!$otp) {
+            // Debug : vérifier si le code existe mais est expiré ou utilisé
+            $s2 = db()->prepare("SELECT expires_at, used FROM kk_client_otp WHERE email=? AND code=? ORDER BY id DESC LIMIT 1");
+            $s2->execute([$email, $code]);
+            $debug = $s2->fetch();
+            if ($debug) {
+                if ($debug['used']) $error = 'Ce code a déjà été utilisé. Demandez un nouveau code.';
+                else $error = 'Code expiré (valable 10 min). Demandez un nouveau code.';
+            } else {
+                $error = 'Code incorrect. Vérifiez votre email et réessayez.';
+            }
+            $step = 'verify';
+            $_SESSION['otp_email'] = $email;
+        } else {
+            // Invalider le code
+            db()->prepare("UPDATE kk_client_otp SET used=1 WHERE id=?")->execute([$otp['id']]);
+
+            // Créer ou retrouver le client
+            $sc = db()->prepare("SELECT id FROM kk_clients WHERE email=? LIMIT 1");
+            $sc->execute([$email]);
+            $cid = $sc->fetchColumn();
+            if (!$cid) {
+                db()->prepare("INSERT INTO kk_clients(email,name,type) VALUES(?,?,?)")
+                   ->execute([$email, '', 'particulier']);
+                $cid = (int)db()->lastInsertId();
+            }
+
+            $_SESSION['client_email'] = $email;
+            $_SESSION['client_id']    = (int)$cid;
+            unset($_SESSION['otp_email']);
+            session_write_close();
+            session_start();
+            $step = 'account';
         }
-
-        $_SESSION['client_email'] = $email;
-        $_SESSION['client_id']    = (int)$cid;
-        unset($_SESSION['otp_email']);
-        session_write_close(); // Forcer l'écriture
-        // Rouvrir la session pour la suite de la page
-        session_start();
-        $step = 'account';
     }
 }
 

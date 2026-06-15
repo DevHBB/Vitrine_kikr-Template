@@ -40,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
     if (!recaptcha_verify($rdv_token, (float)get_setting('recaptcha_score','0.5'))) {
         $errors[] = 'Vérification anti-spam échouée. Veuillez réessayer.';
     }
+    if (empty($_POST['accept_cgv'])) {
+        $errors[] = 'Vous devez accepter les CGV et CGU pour continuer.';
+    }
     if (!$name)  $errors[] = 'Nom requis.';
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
     if (!$phone) $errors[] = 'Téléphone requis.';
@@ -63,9 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
         $sc->execute([$email]);
         $client_id = $sc->fetchColumn();
         if (!$client_id) {
-            db()->prepare("INSERT INTO kk_clients(type,name,email,phone) VALUES(?,?,?,?)")
+            db()->prepare("INSERT INTO kk_clients(type,name,email,phone,newsletter_opt) VALUES(?,?,?,?,1)")
                ->execute([$ctype,$name,$email,$phone]);
             $client_id = (int)db()->lastInsertId();
+            // Inscrire à la newsletter
+            try {
+                subscribe($email, $name);
+            } catch(Exception $e) {}
         }
         $duree    = (stripos($svc_lb,'prépa')!==false||stripos($svc_lb,'prepa')!==false) ? 2 : 1;
         $priority = ($ctype==='pro' && ps('pro_priority','1')==='1') ? 1 : 0;
@@ -110,28 +117,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
         if (ps('notif_email','1')==='1') {
             $sname = get_setting('site_name');
 
-            // Paiement immédiat demandé (mode=now) → envoyer le lien de paiement avec l'accusé
+            // RDV ID fraichement inséré
+            $new_rdv_id = (int)db()->lastInsertId();
+
+            // Paiement automatique selon les paramètres
             $pay_enabled  = get_setting('payment_rdv_enabled','0') === '1';
             $pay_mode_rdv = ps('payment_rdv_mode','choice');
             $pay_link_auto = '';
+
             if ($pay_enabled && $pay_mode_rdv === 'now') {
-                $new_rdv_id = (int)db()->lastInsertId();
+                // Envoyer le lien de paiement immédiatement avec la demande
                 $pay_link_auto = create_rdv_payment_link($new_rdv_id, 0);
-                db()->prepare("UPDATE kk_appointments SET payment_status='pending_payment' WHERE id=?")->execute([$new_rdv_id]);
             }
 
             if ($pay_link_auto) {
-                $body = "Bonjour $name,\r\n\r\nVotre demande de RDV a bien été reçue.\r\n\r\n"
-                    . "Pour la valider, merci de procéder au paiement via ce lien :\r\n$pay_link_auto\r\n\r\n"
-                    . "Votre RDV sera confirmé dès réception du paiement.\r\n\r\nCordialement,\r\n$sname\r\n" . get_setting('site_phone');
-                $subject = "💳 Finalisez votre RDV — $sname";
+                $subject = "Finalisez votre RDV — $sname";
+                $body = "Bonjour $name,\r\n\r\n"
+                    . "Votre demande de RDV a bien été reçue.\r\n\r\n"
+                    . "Pour finaliser votre réservation, merci de régler en ligne :\r\n"
+                    . $pay_link_auto . "\r\n\r\n"
+                    . "Votre rendez-vous sera confirmé dès réception du paiement.\r\n\r\n"
+                    . "⚠️ Ne déposez pas votre moto avant notre confirmation.\r\n\r\n"
+                    . "Cordialement,\r\n$sname\r\n" . get_setting('site_phone');
             } else {
+                $subject = $rdv_mode==='request' ? "Demande RDV reçue — $sname" : "RDV confirmé — $sname";
                 $body = $rdv_mode==='request'
-                    ? "Bonjour $name,\r\n\r\nVotre demande est EN ATTENTE DE CONFIRMATION.\r\nNe déposez pas votre moto avant notre appel de confirmation.\r\n\r\n⚠️ Aucun créneau n'est réservé tant que vous n'avez pas reçu notre confirmation.\r\n\r\n$sname\r\n".get_setting('site_phone')
-                    : "Bonjour $name,\r\n\r\nVotre demande de RDV a bien été reçue. Nous vous contacterons rapidement.\r\n\r\n$sname";
-                $subject = $rdv_mode==='request' ? "Demande RDV reçue — $sname" : "RDV reçu — $sname";
+                    ? "Bonjour $name,\r\n\r\nVotre demande est EN ATTENTE DE CONFIRMATION.\r\n\r\n⚠️ Ne déposez pas votre moto avant notre appel de confirmation.\r\n\r\nCordialement,\r\n$sname\r\n" . get_setting('site_phone')
+                    : "Bonjour $name,\r\n\r\nVotre rendez-vous a bien été enregistré. Nous vous contacterons rapidement.\r\n\r\nCordialement,\r\n$sname";
             }
-            mail($email, $subject, $body, "From: ".get_setting('site_email'));
+            mail($email, $subject, $body, "From: $sname <" . get_setting('site_email') . ">");
         }
         $success = true;
     } else {
@@ -342,6 +356,18 @@ $next_m=$month+1;$next_y=$year; if($next_m>12){$next_m=1;$next_y++;}
         <input type="file" name="fiche_pdf" accept=".pdf" style="background:white;">
       </div>
       <input type="hidden" name="g_recaptcha_response" id="rdv_g_token">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#f9f9f9;border-radius:10px;margin-bottom:12px;">
+        <input type="checkbox" name="accept_cgv" id="accept_cgv" required
+               style="width:16px;height:16px;margin-top:2px;accent-color:#ed0c0f;flex-shrink:0;">
+        <label for="accept_cgv" style="font-size:12px;color:#555;cursor:pointer;line-height:1.5;">
+          J'accepte les
+          <a href="<?= BASE_URL ?>/legal.php?page=cgv" target="_blank" style="color:#ed0c0f;font-weight:700;">Conditions Générales de Vente</a>
+          et les
+          <a href="<?= BASE_URL ?>/legal.php?page=cgu" target="_blank" style="color:#ed0c0f;font-weight:700;">CGU</a>.
+          Je confirme avoir lu la
+          <a href="<?= BASE_URL ?>/legal.php?page=confidentialite" target="_blank" style="color:#ed0c0f;font-weight:700;">politique de confidentialité</a>. *
+        </label>
+      </div>
       <button type="submit" class="rdv-submit" id="rdv-submit-btn">Envoyer ma demande →</button>
       <p style="font-size:11px;color:#aaa;text-align:center;margin-top:8px;">Nous vous contacterons sous 24h pour confirmer.</p>
     </form>

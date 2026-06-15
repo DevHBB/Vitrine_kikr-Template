@@ -104,7 +104,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         $order_id = (int)db()->lastInsertId();
 
         // Créer facture automatiquement
-        $order = compact('items','subtotal','shipping','total','client_name','client_email','client_phone') + ['shipping_addr'=>$addr,'client_name'=>$name,'client_email'=>$email,'client_phone'=>$phone,'shipping'=>$ship,'items'=>json_encode($items)];
+        $order = [
+            'items'          => json_encode($items, JSON_UNESCAPED_UNICODE),
+            'subtotal'       => $subtotal,
+            'shipping'       => $ship,
+            'total'          => $total,
+            'client_name'    => $name,
+            'client_email'   => $email,
+            'client_phone'   => $phone,
+            'shipping_addr'  => $addr,
+        ];
         $inv_id = create_order_invoice($order);
         if ($inv_id) db()->prepare("UPDATE kk_orders SET invoice_id=? WHERE id=?")->execute([$inv_id,$order_id]);
 
@@ -113,16 +122,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
             db()->prepare("UPDATE kk_products SET stock=GREATEST(stock-?,0) WHERE id=? AND stock>0")->execute([$item['qty'],$item['id']]);
         }
 
-        // Email client
+        // Email client avec facture
         $sname = get_setting('site_name');
+        $inv_link = $inv_id ? site_url('/admin/invoice_pdf.php?id=' . $inv_id) : '';
         $body  = "Bonjour $name,\r\n\r\nMerci pour votre commande n°$num !\r\n\r\n";
         foreach ($items as $it) $body .= "• {$it['name']} x{$it['qty']} — ".number_format($it['price']*$it['qty'],2,',','')." €\r\n";
-        $body .= "\r\nTotal : ".number_format($total,2,',','')." €\r\n\r\nNous vous contacterons rapidement pour confirmer.\r\n\r\nCordialement,\r\n$sname";
-        mail($email,"✅ Commande $num — $sname",$body,"From: ".get_setting('site_email'));
+        $body .= "\r\nTotal : ".number_format($total,2,',','')." €\r\n";
+        if ($inv_link) $body .= "\r\n📄 Votre facture : $inv_link\r\n";
+        $body .= "\r\nNous vous contacterons rapidement pour confirmer.\r\n\r\nCordialement,\r\n$sname\r\n".get_setting('site_phone');
+        mail($email,"✅ Commande $num — $sname",$body,"From: $sname <".get_setting('site_email').">");
 
         // Email admin
         $admin_body = "Nouvelle commande $num de $name ($email)\r\nTotal : ".number_format($total,2,',','')." €\r\nMode : $method";
         mail(get_setting('site_email'),"🛒 Nouvelle commande $num",$admin_body,"From: ".get_setting('site_email'));
+
+        // Newsletter opt-in
+        if (!empty($_POST['newsletter_opt'])) {
+            try { subscribe($email, $name); } catch(Exception $e) {}
+        }
+        // Mettre à jour newsletter_opt dans le client
+        if (!empty($_POST['newsletter_opt'])) {
+            db()->prepare("UPDATE kk_clients SET newsletter_opt=1 WHERE id=?")->execute([$cid]);
+        }
 
         // Vider panier
         $_SESSION['cart'] = [];
@@ -499,7 +520,22 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
       </div>
       <input type="hidden" name="shipping" id="ship-hidden" value="0">
 
-      <button type="submit" class="co-btn" style="margin-top:16px;">Confirmer la commande →</button>
+      <!-- CGV -->
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#f9f9f9;border-radius:10px;margin-top:14px;margin-bottom:8px;">
+        <input type="checkbox" name="accept_cgv" id="co_cgv" required
+               style="width:16px;height:16px;margin-top:2px;accent-color:#ed0c0f;flex-shrink:0;">
+        <label for="co_cgv" style="font-size:12px;color:#555;cursor:pointer;line-height:1.5;">
+          J'accepte les <a href="/legal.php?page=cgv" target="_blank" style="color:#ed0c0f;font-weight:700;">CGV</a>
+          et les <a href="/legal.php?page=cgu" target="_blank" style="color:#ed0c0f;font-weight:700;">CGU</a>.
+          Mes données sont traitées conformément à la
+          <a href="/legal.php?page=confidentialite" target="_blank" style="color:#ed0c0f;font-weight:700;">politique de confidentialité</a>. *
+        </label>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" name="newsletter_opt" value="1" checked style="accent-color:#ed0c0f;">
+        Recevoir les offres et actualités par email (désinscription possible à tout moment)
+      </label>
+      <button type="submit" class="co-btn" style="margin-top:4px;">Confirmer la commande →</button>
     </form>
   </div>
 </div>

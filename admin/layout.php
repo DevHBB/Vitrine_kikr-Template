@@ -53,6 +53,7 @@ $menu = [
     ['id'=>'quick_payment',      'label'=>'Lien paiement rapide','href'=>BASE_URL.'/admin/quick_payment.php', 'icon'=>'<path d="M13 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/>'],
     ['id'=>'payment_settings',  'label'=>'Paiement',            'href'=>BASE_URL.'/admin/payment_settings.php', 'icon'=>'<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>'],
     ['sep'=>'Communication'],
+    ['id'=>'email_templates','label'=>'Templates email',  'href'=>BASE_URL.'/admin/email_templates.php','icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
     ['id'=>'smtp_settings', 'label'=>'Email & SMS config', 'href'=>BASE_URL.'/admin/smtp_settings.php', 'icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
     ['id'=>'newsletter',        'label'=>'Newsletter / SMS',    'href'=>BASE_URL.'/admin/newsletter.php',        'icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
     ['sep'=>'Légal'],

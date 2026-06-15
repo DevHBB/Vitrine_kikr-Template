@@ -245,10 +245,16 @@ function format_price(array $item): string {
 }
 
 // Lien de paiement direct sur un RDV
-function create_rdv_payment_link(int $rdv_id, float $amount): string {
-    $token = bin2hex(random_bytes(32));
-    db()->prepare("UPDATE kk_appointments SET payment_link_token=?, payment_status='link_sent' WHERE id=?")
+function create_rdv_payment_link(int $rdv_id, float $amount, int $expires_days = 30): string {
+    $token   = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', strtotime("+{$expires_days} days"));
+    db()->prepare("UPDATE kk_appointments SET payment_link_token=?, payment_status='pending_payment', updated_at=NOW() WHERE id=?")
        ->execute([$token, $rdv_id]);
+    // Stocker aussi dans kk_payment_links pour le suivi
+    try {
+        db()->prepare("INSERT INTO kk_payment_links(token,invoice_id,amount,expires_at) VALUES(?,NULL,?,?)")
+           ->execute([$token, $amount, $expires]);
+    } catch(Exception $e) {}
     return site_url('/payer.php?t=' . $token . '&a=' . number_format($amount, 2, '.', ''));
 }
 
