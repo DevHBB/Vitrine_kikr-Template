@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
 
         // Email client avec facture
         $sname = get_setting('site_name');
-        $inv_link = $inv_id ? site_url('/admin/invoice_pdf.php?id=' . $inv_id) : '';
+        $inv_link = $inv_id ? facture_url($inv_id) : '';
         $body  = "Bonjour $name,\r\n\r\nMerci pour votre commande n°$num !\r\n\r\n";
         foreach ($items as $it) $body .= "• {$it['name']} x{$it['qty']} — ".number_format($it['price']*$it['qty'],2,',','')." €\r\n";
         $body .= "\r\nTotal : ".number_format($total,2,',','')." €\r\n";

@@ -10,18 +10,43 @@ $rdv    = null;
 
 if (!$token) { header('Location: ' . BASE_URL . '/'); exit; }
 
-$s = db()->prepare("SELECT * FROM kk_appointments WHERE payment_link_token=?");
-$s->execute([$token]);
-$rdv = $s->fetch();
+// Chercher d'abord dans les appointments (liens RDV)
+$rdv = null;
+$payment_link = null;
 
-if (!$rdv) {
-    $error = 'Lien invalide.';
-} elseif ($rdv['payment_status'] === 'paid') {
-    $error = 'Ce paiement a déjà été effectué. Merci !';
+$s = db()->prepare("SELECT * FROM kk_appointments WHERE payment_link_token=? LIMIT 1");
+$s->execute([$token]);
+$rdv = $s->fetch() ?: null;
+
+if ($rdv) {
+    if ($rdv['payment_status'] === 'paid') {
+        $error = 'Ce paiement a déjà été effectué. Merci !';
+    } else {
+        $amount = (float)($rdv['price_final'] ?? $rdv['price_estimate'] ?? 0);
+        if ($amount <= 0) $amount = (float)($_GET['a'] ?? 0);
+    }
 } else {
-    // Utiliser le prix final si dispo, sinon estimation, sinon GET
-    $amount = (float)($rdv['price_final'] ?? $rdv['price_estimate'] ?? $amount);
-    if ($amount <= 0 && isset($_GET['a'])) $amount = (float)$_GET['a'];
+    // Chercher dans kk_payment_links (liens générés manuellement)
+    try {
+        $s2 = db()->prepare("SELECT pl.*, i.client_name, i.client_email, i.number as inv_number
+            FROM kk_payment_links pl
+            LEFT JOIN kk_invoices i ON pl.invoice_id = i.id
+            WHERE pl.token = ? LIMIT 1");
+        $s2->execute([$token]);
+        $payment_link = $s2->fetch() ?: null;
+    } catch(Exception $e) {}
+
+    if ($payment_link) {
+        if (!empty($payment_link['used_at'])) {
+            $error = 'Ce paiement a déjà été effectué. Merci !';
+        } elseif ($payment_link['expires_at'] && $payment_link['expires_at'] < date('Y-m-d H:i:s')) {
+            $error = 'Ce lien de paiement a expiré. Contactez-nous pour en obtenir un nouveau.';
+        } else {
+            $amount = (float)$payment_link['amount'];
+        }
+    } else {
+        $error = 'Lien invalide ou expiré. Contactez-nous si le problème persiste.';
+    }
 }
 
 $success = false;
@@ -100,9 +125,14 @@ $bank_iban  = get_setting('bank_iban', '');
   <?php else: ?>
   <div class="payer-amount"><?= number_format($amount, 2, ',', ' ') ?> €</div>
   <div class="payer-ref">
-    <?= h(get_setting('site_name')) ?> — RDV #<?= $rdv['id'] ?><br>
-    <?= h($rdv['service_label']) ?> — <?= h(trim($rdv['moto_marque'].' '.$rdv['moto_modele'])) ?>
-    <?php if($rdv['slot_date']): ?><br>📅 <?= date('d/m/Y', strtotime($rdv['slot_date'])) ?><?php endif; ?>
+    <?php if($rdv): ?>
+      <?= h(get_setting('site_name')) ?> — RDV #<?= $rdv['id'] ?><br>
+      <?= h($rdv['service_label'] ?? '') ?> — <?= h(trim(($rdv['moto_marque']??'').' '.($rdv['moto_modele']??''))) ?>
+      <?php if($rdv['slot_date']): ?><br>📅 <?= date('d/m/Y', strtotime($rdv['slot_date'])) ?><?php endif; ?>
+    <?php elseif($payment_link): ?>
+      <?= h(get_setting('site_name')) ?> — <?= h($payment_link['inv_number'] ?? 'Paiement') ?><br>
+      <?= h($payment_link['client_name'] ?? '') ?>
+    <?php endif; ?>
   </div>
   <?php if($rdv['price_note']): ?>
   <div class="payer-note">ℹ️ <?= h($rdv['price_note']) ?></div>

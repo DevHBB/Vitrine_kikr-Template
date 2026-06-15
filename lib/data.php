@@ -321,14 +321,20 @@ function next_order_number(): string {
     return 'CMD-'.$y.'-'.str_pad($n, 4, '0', STR_PAD_LEFT);
 }
 
+function facture_url(int $inv_id): string {
+    return site_url('/facture.php?id=' . $inv_id);
+}
+
 function create_order_invoice(array $order): ?int {
     // Crée une facture liée à la commande
     $lines = [];
     foreach (jd($order['items'] ?? '[]', []) as $item) {
+        // Les items du panier utilisent 'price', les lignes de facture 'unit_price'
+        $item_price = (float)($item['unit_price'] ?? $item['price'] ?? 0);
         $lines[] = [
-            'desc'       => $item['name'],
-            'qty'        => $item['qty'],
-            'unit_price' => round((float)$item['unit_price'] / 1.20, 2),
+            'desc'       => $item['name'] ?? 'Produit',
+            'qty'        => (float)($item['qty']  ?? 1),
+            'unit_price' => round($item_price / 1.20, 2), // HT
             'tva'        => 20,
         ];
     }

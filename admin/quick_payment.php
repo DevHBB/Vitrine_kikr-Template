@@ -194,7 +194,7 @@ $links = db()->query("
               class="btn btn-ghost btn-sm" title="Copier le lien">📋</button>
       <?php endif; ?>
       <?php if($pl['inv_number']): ?>
-      <a href="<?= BASE_URL ?>/admin/invoice_pdf.php?id=<?= $pl['invoice_id'] ?>" target="_blank" class="btn btn-ghost btn-sm" title="Voir la facture">📄</a>
+      <a href="<?= BASE_URL ?>/facture.php?id=<?= $pl['invoice_id'] ?>" target="_blank" class="btn btn-ghost btn-sm" title="Voir la facture">📄</a>
       <?php endif; ?>
     </div>
     <?php endforeach; ?>

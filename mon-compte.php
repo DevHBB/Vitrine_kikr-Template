@@ -76,9 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_otp'])) {
 
 // ---- ÉTAPE 2 : Vérification code OTP ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_otp'])) {
-    // Email depuis POST (champ hidden) en priorité, session en fallback
-    $email = trim($_POST['otp_email_fallback'] ?? '') ?: ($_SESSION['otp_email'] ?? '');
-    $code  = trim(str_replace([' ','-','.'], '', $_POST['code'] ?? ''));
+    // Email : POST hidden > session > cookie - triple fallback
+    $email = trim($_POST['otp_email_fallback'] ?? '');
+    if (!$email) $email = $_SESSION['otp_email'] ?? '';
+    if (!$email && !empty($_COOKIE['otp_email'])) $email = base64_decode($_COOKIE['otp_email']);
+    $email = strtolower(trim($email));
+    $code  = preg_replace('/\D/', '', trim($_POST['code'] ?? ''));
 
     if (!$email || !$code) {
         $error = 'Email ou code manquant. Recommencez depuis le début.';
