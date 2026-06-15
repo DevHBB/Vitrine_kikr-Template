@@ -1,0 +1,5 @@
+Options -Indexes
+<Files "*.ini">
+  Order Allow,Deny
+  Deny from all
+</Files>

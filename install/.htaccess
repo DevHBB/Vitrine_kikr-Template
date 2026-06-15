@@ -1,0 +1,5 @@
+# Bloquer accès direct après installation
+<Files "config.ini">
+  Order Allow,Deny
+  Deny from all
+</Files>
