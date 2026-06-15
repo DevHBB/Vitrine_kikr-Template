@@ -55,6 +55,7 @@ $menu = [
     ['sep'=>'Communication'],
     ['id'=>'email_templates','label'=>'Templates email',  'href'=>BASE_URL.'/admin/email_templates.php','icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
     ['id'=>'smtp_settings', 'label'=>'Email & SMS config', 'href'=>BASE_URL.'/admin/smtp_settings.php', 'icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
+    ['id'=>'newsletter_editor','label'=>'Éditeur newsletter','href'=>BASE_URL.'/admin/newsletter_editor.php','icon'=>'<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>'],
     ['id'=>'newsletter',        'label'=>'Newsletter / SMS',    'href'=>BASE_URL.'/admin/newsletter.php',        'icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'],
     ['sep'=>'Légal'],
     ['id'=>'legal',   'label'=>'Pages légales',  'href'=>BASE_URL.'/admin/legal.php',   'icon'=>'<path d="M12 1l3 6 6 .75-4.5 4.25L18 18l-6-3-6 3 1.5-5.95L3 7.75 9 7z"/>'],

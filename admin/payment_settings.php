@@ -4,8 +4,9 @@ $saved=false;
 if($_SERVER['REQUEST_METHOD']==='POST'){
     $fields=['stripe_public_key','stripe_secret_key','paypal_client_id','paypal_secret','bank_iban','bank_bic','bank_name'];
     foreach($fields as $k) set_setting($k,trim($_POST[$k]??''));
-    set_setting('payment_before_deposit',isset($_POST['payment_before_deposit'])?'1':'0');
-    set_setting('payment_required',isset($_POST['payment_required'])?'1':'0');
+    set_setting('payment_before_deposit', isset($_POST['payment_before_deposit'])?'1':'0');
+    set_setting('payment_required',       isset($_POST['payment_required'])?'1':'0');
+    set_setting('payment_allow_onsite',   isset($_POST['payment_allow_onsite'])?'1':'0');
     $saved=true;
 }
 ?>
@@ -24,6 +25,10 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid <?= get_setting('payment_required','0')==='1'?'var(--red)':'var(--border)' ?>;border-radius:12px;cursor:pointer;background:<?= get_setting('payment_required','0')==='1'?'#fef2f2':'var(--bg)' ?>;">
       <input type="checkbox" name="payment_required" <?= get_setting('payment_required','0')==='1'?'checked':'' ?> style="width:18px;height:18px;accent-color:#ed0c0f;">
       <div><div style="font-size:13px;font-weight:700;">⚠️ Paiement obligatoire avant confirmation</div><div style="font-size:11px;color:var(--muted);">Le RDV n'est confirmé qu'après réception du paiement</div></div>
+    </label>
+    <label style="display:flex;align-items:center;gap:14px;padding:14px;border:2px solid <?= get_setting('payment_allow_onsite','1')==='1'?'var(--red)':'var(--border)' ?>;border-radius:12px;cursor:pointer;background:<?= get_setting('payment_allow_onsite','1')==='1'?'#fef2f2':'var(--bg)' ?>;">
+      <input type="checkbox" name="payment_allow_onsite" <?= get_setting('payment_allow_onsite','1')==='1'?'checked':'' ?> style="width:18px;height:18px;accent-color:#ed0c0f;">
+      <div><div style="font-size:13px;font-weight:700;">🤝 Autoriser le paiement en main propre / à la livraison</div><div style="font-size:11px;color:var(--muted);">Si désactivé, seuls Stripe, PayPal et virement sont proposés</div></div>
     </label>
   </div>
 </div>

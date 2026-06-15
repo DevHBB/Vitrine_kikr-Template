@@ -166,11 +166,13 @@ $bank_iban  = get_setting('bank_iban', '');
       </label>
       <?php endif; ?>
 
-      <label class="pay-method" onclick="selM(this,'livraison')">
+      <?php if(get_setting('payment_allow_onsite','1')==='1'): ?>
+<label class="pay-method" onclick="selM(this,'livraison')">
         <input type="radio" name="payment_method" value="livraison" style="display:none;">
         <span class="pay-ico">🤝</span>
         <div><div>Paiement lors du dépôt</div><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
       </label>
+<?php endif; ?>
     </div>
 
     <!-- Stripe card element -->
@@ -205,6 +207,8 @@ $bank_iban  = get_setting('bank_iban', '');
 </div>
 
 <?php if(!$success && !$error): ?>
+<?php if($stripe_pk): ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
+<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
 <script>
 function selM(lbl, method) {
   document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('sel'));
@@ -240,8 +244,7 @@ paypal.Buttons({
 }).render('#paypal-btn-container');
 <?php endif; ?>
 </script>
-<?php if($stripe_pk): ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
-<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
+
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/layout/footer.php'; ?>

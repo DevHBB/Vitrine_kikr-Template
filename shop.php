@@ -533,9 +533,11 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
         </div>
         <?php endif; ?>
 
-        <div class="pay-opt sel" id="opt-livraison" onclick="shopSelPay('livraison')">
+        <?php if(get_setting('payment_allow_onsite','1')==='1'): ?>
+<div class="pay-opt sel" id="opt-livraison" onclick="shopSelPay('livraison')">
           <span style="font-size:20px;">🤝</span>
-          <div><div style="font-size:13px;font-weight:700;">Paiement à la livraison / retrait</div><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
+          <div><div style="font-size:13px;font-weight:700;">Paiement à la livraison / retrait</div>
+<?php endif; ?><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
         </div>
       </div>
 
@@ -566,6 +568,8 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
     </form>
   </div>
 </div>
+<?php if($stripe_pk):  ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
+<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
 <script>
 var cartBase = <?= $cart_total ?>;
 function updateShipping(v) {
@@ -706,8 +710,7 @@ function shopSelPay(method) {
 <?php endif; ?>
 
 <?php if($show_cart && !empty($cart)): ?>
-<?php if($stripe_pk):  ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
-<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
+
 <script>
 <?php if($stripe_pk): ?>
 var stripeInst = Stripe('<?= h($stripe_pk) ?>');
