@@ -56,7 +56,10 @@ if ($action === 'toggle') {
 }
 
 $products = db()->query("SELECT * FROM kk_products ORDER BY position, created_at DESC")->fetchAll();
-$cats     = array_unique(array_filter(array_column($products, 'category')));
+$cats_from_prods = array_unique(array_filter(array_column($products, 'category')));
+$cats_from_settings = array_filter(array_map('trim', explode(',', get_setting('shop_categories',''))));
+$cats = array_unique(array_merge($cats_from_settings, $cats_from_prods));
+sort($cats);
 
 $edit_id = isset($_GET['edit']) ? (int)$_GET['edit'] : -1;
 $ep = null;

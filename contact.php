@@ -269,4 +269,23 @@ selectMotif('<?= h($_POST['motif']) ?>');
 <?php endif; ?>
 </script>
 
+<?php if(get_setting('recaptcha_site','')): ?>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= h(get_setting('recaptcha_site')) ?>"></script>
+<script>
+document.querySelector('form')?.addEventListener('submit', function(e) {
+  var btn = document.getElementById('cf-btn');
+  if (!btn) return;
+  e.preventDefault();
+  var form = this;
+  btn.disabled = true;
+  btn.textContent = 'Vérification…';
+  grecaptcha.ready(function() {
+    grecaptcha.execute('<?= h(get_setting('recaptcha_site')) ?>', {action:'contact'}).then(function(token) {
+      document.getElementById('g_recaptcha_response').value = token;
+      form.submit();
+    });
+  });
+});
+</script>
+<?php endif; ?>
 <?php require_once __DIR__ . '/layout/footer.php'; ?>

@@ -13,6 +13,13 @@ $pages_meta = [
 ];
 
 // Infos légales globales
+// Réinitialiser les pages légales
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_legal'])) {
+    db()->exec("TRUNCATE TABLE kk_legal_pages");
+    seed_legal_pages(db());
+    $saved = true;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_global'])) {
     foreach (['legal_owner','legal_siret','legal_forme','legal_host','legal_host_addr'] as $k) {
         set_setting($k, trim($_POST[$k] ?? ''));
@@ -36,7 +43,18 @@ $current_page = get_legal($slug);
 ?>
 <div class="adm-topbar">
   <h1>⚖️ Pages légales</h1>
-  <a href="<?= BASE_URL ?>/legal.php?page=<?= h($slug) ?>" target="_blank" class="btn btn-secondary btn-sm">👁 Voir sur le site</a>
+  <div style="display:flex;gap:8px;">
+    <a href="<?= BASE_URL ?>/legal.php?page=<?= h($slug) ?>" target="_blank" class="btn btn-secondary btn-sm">👁 Voir sur le site</a>
+    <?php if(get_all_legal() === []): ?>
+    <form method="POST" style="display:inline;">
+      <button type="submit" name="reset_legal" value="1" class="btn btn-primary btn-sm">🔄 Générer les pages par défaut</button>
+    </form>
+    <?php else: ?>
+    <form method="POST" style="display:inline;" onsubmit="return confirm('Réinitialiser toutes les pages légales avec le contenu par défaut ? Votre contenu personnalisé sera perdu.')">
+      <button type="submit" name="reset_legal" value="1" class="btn btn-ghost btn-sm">🔄 Réinitialiser</button>
+    </form>
+    <?php endif; ?>
+  </div>
 </div>
 <div class="adm-content">
 <?php if($saved): ?><div class="alert alert-ok">✅ Enregistré.</div><?php endif; ?>

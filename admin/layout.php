@@ -15,6 +15,12 @@ try {
     $badge_count = (int)db()->query("SELECT COUNT(*) FROM kk_appointments WHERE status='pending'")->fetchColumn();
 } catch(Exception $e) {}
 
+// Badge messages non lus
+$msg_badge = 0;
+try {
+    $msg_badge = (int)db()->query("SELECT COUNT(*) FROM kk_messages WHERE read_at IS NULL")->fetchColumn();
+} catch(Exception $e) {}
+
 $menu = [
     ['sep'=>'Planning'],
     ['id'=>'planning',          'label'=>'Calendrier',         'href'=>BASE_URL.'/admin/planning.php',          'icon'=>'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>','badge'=>true],
@@ -32,10 +38,15 @@ $menu = [
     ['id'=>'services',          'label'=>'Services',            'href'=>BASE_URL.'/admin/services.php',          'icon'=>'<circle cx="12" cy="12" r="3"/>'],
     ['id'=>'partners',          'label'=>'Partenaires',         'href'=>BASE_URL.'/admin/partners.php',          'icon'=>'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>'],
     ['id'=>'portfolio',         'label'=>'Portfolio',           'href'=>BASE_URL.'/admin/portfolio.php',         'icon'=>'<rect x="3" y="3" width="18" height="18" rx="2"/>'],
+    ['id'=>'messages',          'label'=>'Messages',        'href'=>BASE_URL.'/admin/messages.php',          'icon'=>'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>','badge_msg'=>true],
     ['id'=>'contact',           'label'=>'Contact',             'href'=>BASE_URL.'/admin/contact.php',           'icon'=>'<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>'],
     ['sep'=>'Pages libres'],
     ['id'=>'pages',             'label'=>'Toutes les pages',    'href'=>BASE_URL.'/admin/pages.php',             'icon'=>'<path d="M14 2H6a2 2 0 0 0-2 2v16h16V8z"/>'],
     ['id'=>'page_edit',         'label'=>'Nouvelle page',       'href'=>BASE_URL.'/admin/page_edit.php',         'icon'=>'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'],
+    ['sep'=>'Boutique'],
+    ['id'=>'shop',         'label'=>'Produits',        'href'=>BASE_URL.'/admin/shop.php',           'icon'=>'<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>'],
+    ['id'=>'shop_cats',    'label'=>'Catégories',       'href'=>BASE_URL.'/admin/shop_cats.php',      'icon'=>'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'],
+    ['id'=>'shop_orders',  'label'=>'Commandes',        'href'=>BASE_URL.'/admin/shop_orders.php',    'icon'=>'<path d="M14 2H6a2 2 0 0 0-2 2v16h16V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>'],
     ['sep'=>'Clients & Facturation'],
     ['id'=>'clients',           'label'=>'Base clients',        'href'=>BASE_URL.'/admin/clients.php',           'icon'=>'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
     ['id'=>'invoices',          'label'=>'Facturation',         'href'=>BASE_URL.'/admin/invoices.php',          'icon'=>'<path d="M14 2H6a2 2 0 0 0-2 2v16h16V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
@@ -79,6 +90,9 @@ $menu = [
         <?= $item['label'] ?>
         <?php if(!empty($item['badge']) && $badge_count > 0): ?>
         <span class="sb-badge"><?= $badge_count ?></span>
+        <?php endif; ?>
+        <?php if(!empty($item['badge_msg']) && $msg_badge > 0): ?>
+        <span class="sb-badge" style="background:#3b82f6;"><?= $msg_badge ?></span>
         <?php endif; ?>
       </a>
     <?php endif; ?>

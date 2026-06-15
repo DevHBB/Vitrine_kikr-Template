@@ -35,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
     $slot_d = trim($_POST['slot_date']     ?? '');
     $slot_t = trim($_POST['slot_time']     ?? '');
 
+    // reCAPTCHA v3
+    $rdv_token = trim($_POST['g_recaptcha_response'] ?? '');
+    if (!recaptcha_verify($rdv_token, (float)get_setting('recaptcha_score','0.5'))) {
+        $errors[] = 'Vérification anti-spam échouée. Veuillez réessayer.';
+    }
     if (!$name)  $errors[] = 'Nom requis.';
     if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
     if (!$phone) $errors[] = 'Téléphone requis.';
@@ -75,17 +80,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rdv_submit'])) {
 
         $admin_email = get_setting('site_email');
         if ($admin_email && ps('notif_email','1')==='1') {
-            $pref = $priority ? '[🏆 Sponsorisé] ' : '';
-            mail($admin_email, $pref."Nouvelle demande RDV — $name",
-                "Nom: $name\nEmail: $email\nTél: $phone\nMoto: $mmarq $mmodl\nPrestation: $svc_lb\n".($slot_d?"Date: $slot_d\n":"")."\n$notes",
-                "From: $email\r\nReply-To: $email");
+            $pref  = $priority ? '[🏆 Sponsorisé] ' : '';
+            $sname = get_setting('site_name');
+            $admin_body =
+                "═══════════════════════════════\r\n"
+                . " {$pref}Nouvelle demande de RDV\r\n"
+                . "═══════════════════════════════\r\n\r\n"
+                . "👤 Client      : $name\r\n"
+                . "📧 Email       : $email\r\n"
+                . "📞 Téléphone   : $phone\r\n"
+                . ($ctype==='pro' ? "⭐ Type        : Pilote sponsorisé\r\n" : "")
+                . "\r\n🏍️  Moto        : $mmarq $mmodl" . ($mannee ? " ($mannee)" : "") . "\r\n"
+                . "🔧 Prestation  : $svc_lb\r\n"
+                . ($slot_d ? "📅 Date souhait.: " . date('d/m/Y', strtotime($slot_d)) . ($slot_t ? " à " . substr($slot_t,0,5) : '') . "\r\n" : '')
+                . "\r\n──────────────────────────────\r\n"
+                . " Notes du client\r\n"
+                . "──────────────────────────────\r\n"
+                . ($notes ?: "(Aucune note)")
+                . "\r\n\r\nReçu le " . date('d/m/Y à H:i')
+                . "\r\n\r\n→ Gérer ce RDV : " . site_url('/admin/planning.php');
+
+            mail(
+                $admin_email,
+                $pref . "Nouvelle demande RDV — $name ($svc_lb)",
+                $admin_body,
+                "From: $sname <$admin_email>\r\nReply-To: $name <$email>"
+            );
         }
         if (ps('notif_email','1')==='1') {
             $sname = get_setting('site_name');
-            $body  = $rdv_mode==='request'
-                ? "Bonjour $name,\r\n\r\nVotre demande est EN ATTENTE DE CONFIRMATION.\r\nNe déposez pas votre moto avant notre appel de confirmation.\r\n\r\n⚠️ Aucun créneau n'est réservé tant que vous n'avez pas reçu notre confirmation.\r\n\r\nKik'r Suspension\r\n".get_setting('site_phone')
-                : "Bonjour $name,\r\n\r\nVotre demande de RDV a bien été reçue. Nous vous contacterons rapidement.\r\n\r\n$sname";
-            mail($email, $rdv_mode==='request'?"Demande RDV reçue — En attente de confirmation":"Demande RDV reçue — $sname", $body, "From: ".get_setting('site_email'));
+
+            // Paiement immédiat demandé (mode=now) → envoyer le lien de paiement avec l'accusé
+            $pay_enabled  = get_setting('payment_rdv_enabled','0') === '1';
+            $pay_mode_rdv = ps('payment_rdv_mode','choice');
+            $pay_link_auto = '';
+            if ($pay_enabled && $pay_mode_rdv === 'now') {
+                $new_rdv_id = (int)db()->lastInsertId();
+                $pay_link_auto = create_rdv_payment_link($new_rdv_id, 0);
+                db()->prepare("UPDATE kk_appointments SET payment_status='pending_payment' WHERE id=?")->execute([$new_rdv_id]);
+            }
+
+            if ($pay_link_auto) {
+                $body = "Bonjour $name,\r\n\r\nVotre demande de RDV a bien été reçue.\r\n\r\n"
+                    . "Pour la valider, merci de procéder au paiement via ce lien :\r\n$pay_link_auto\r\n\r\n"
+                    . "Votre RDV sera confirmé dès réception du paiement.\r\n\r\nCordialement,\r\n$sname\r\n" . get_setting('site_phone');
+                $subject = "💳 Finalisez votre RDV — $sname";
+            } else {
+                $body = $rdv_mode==='request'
+                    ? "Bonjour $name,\r\n\r\nVotre demande est EN ATTENTE DE CONFIRMATION.\r\nNe déposez pas votre moto avant notre appel de confirmation.\r\n\r\n⚠️ Aucun créneau n'est réservé tant que vous n'avez pas reçu notre confirmation.\r\n\r\n$sname\r\n".get_setting('site_phone')
+                    : "Bonjour $name,\r\n\r\nVotre demande de RDV a bien été reçue. Nous vous contacterons rapidement.\r\n\r\n$sname";
+                $subject = $rdv_mode==='request' ? "Demande RDV reçue — $sname" : "RDV reçu — $sname";
+            }
+            mail($email, $subject, $body, "From: ".get_setting('site_email'));
         }
         $success = true;
     } else {
@@ -295,7 +341,8 @@ $next_m=$month+1;$next_y=$year; if($next_m>12){$next_m=1;$next_y++;}
       <div class="rdv-f"><label>Fiche PDF (optionnel)</label>
         <input type="file" name="fiche_pdf" accept=".pdf" style="background:white;">
       </div>
-      <button type="submit" class="rdv-submit">Envoyer ma demande →</button>
+      <input type="hidden" name="g_recaptcha_response" id="rdv_g_token">
+      <button type="submit" class="rdv-submit" id="rdv-submit-btn">Envoyer ma demande →</button>
       <p style="font-size:11px;color:#aaa;text-align:center;margin-top:8px;">Nous vous contacterons sous 24h pour confirmer.</p>
     </form>
     <?php endif; ?>
@@ -347,4 +394,23 @@ function setType(t) {
 }
 </script>
 
+<?php if(get_setting('recaptcha_site','')): ?>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= h(get_setting('recaptcha_site')) ?>"></script>
+<script>
+document.getElementById('rdv-form')?.addEventListener('submit', function(e) {
+  var btn = document.getElementById('rdv-submit-btn');
+  if (!btn || !document.getElementById('slot-date-inp')?.value) return; // date requise
+  e.preventDefault();
+  var form = this;
+  btn.disabled = true;
+  btn.textContent = 'Vérification…';
+  grecaptcha.ready(function() {
+    grecaptcha.execute('<?= h(get_setting('recaptcha_site')) ?>', {action:'rdv'}).then(function(token) {
+      document.getElementById('rdv_g_token').value = token;
+      form.submit();
+    });
+  });
+});
+</script>
+<?php endif; ?>
 <?php require_once __DIR__ . '/layout/footer.php'; ?>

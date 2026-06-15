@@ -147,8 +147,23 @@ $bank_iban  = get_setting('bank_iban', '');
       <div id="stripe-el" style="border:1.5px solid #e8e8e8;border-radius:10px;padding:14px;background:white;"></div>
       <div id="stripe-err" style="color:#dc2626;font-size:12px;margin-top:6px;"></div>
     </div>
-    <div id="paypal-box" style="display:none;margin-bottom:16px;">
-      <div id="paypal-btn-container"></div>
+    <!-- Message paiement sur place -->
+    <div id="livraison-msg" style="display:none;background:#f0fdf4;border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid #86efac;">
+      <div style="font-size:14px;font-weight:800;color:#15803d;margin-bottom:6px;">✅ Parfait, on vous attend !</div>
+      <p style="font-size:13px;color:#166534;line-height:1.7;margin:0;">
+        Notre équipe vous attend pour le paiement en main propre.<br>
+        <strong>Votre moto ne pourra être déposée qu'après confirmation de notre part.</strong><br><br>
+        Si vous souhaitez déposer votre moto dès votre venue, appelez-nous d'abord pour vérifier nos disponibilités.<br>
+        <a href="tel:<?= h(get_setting('site_phone')) ?>" style="color:#15803d;font-weight:700;"><?= h(get_setting('site_phone')) ?></a>
+      </p>
+    </div>
+
+    <!-- PayPal boutons -->
+    <div id="paypal-box" style="display:none;margin-bottom:14px;">
+      <div id="paypal-btn-container" style="min-height:45px;"></div>
+      <?php if(!$paypal_cid): ?>
+      <div style="background:#fef9c3;border-radius:8px;padding:10px;font-size:12px;color:#854d0e;">⚠️ PayPal non configuré — allez dans Admin → Paiement pour ajouter vos clés.</div>
+      <?php endif; ?>
     </div>
 
     <button type="submit" class="pay-btn" id="pay-btn">Valider le paiement</button>

@@ -5,6 +5,28 @@ require_once __DIR__ . '/version.php';
 // ============================================================
 
 define('BASE_URL', '');  // '' si racine, '/kikr3' si sous-dossier
+
+// ─── reCAPTCHA v3 ───────────────────────────────────────────
+function recaptcha_verify(string $token, float $min_score = 0.5): bool {
+    $secret = get_setting('recaptcha_secret', '');
+    if (!$secret || !$token) return true; // Désactivé si pas de clé
+    $resp = @file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='
+        . urlencode($secret) . '&response=' . urlencode($token));
+    if (!$resp) return true; // En cas d'erreur réseau, ne pas bloquer
+    $data = json_decode($resp, true);
+    return !empty($data['success']) && ($data['score'] ?? 0) >= $min_score;
+}
+
+// URL absolue auto-détectée depuis le serveur
+function site_url(string $path = ''): string {
+    static $base = null;
+    if ($base === null) {
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $base  = $proto . '://' . $host . BASE_URL;
+    }
+    return $base . $path;
+}
 define('CFG_FILE',  __DIR__ . '/install/config.ini');
 define('INSTALLED', file_exists(CFG_FILE));
 
@@ -262,6 +284,12 @@ function ensure_tables(): void {
             UNIQUE KEY slug (slug)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         seed_legal_pages($pdo);
+    } else {
+        // Table existe mais peut être vide (migration depuis ancienne version)
+        $legal_count = (int)$pdo->query("SELECT COUNT(*) FROM kk_legal_pages")->fetchColumn();
+        if ($legal_count === 0) {
+            seed_legal_pages($pdo);
+        }
     }
 
     // Table produits shop
@@ -333,6 +361,23 @@ function ensure_tables(): void {
     try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN sponsor_logo VARCHAR(500) NOT NULL DEFAULT '' AFTER photo"); } catch(Exception $e) {}
     try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN number VARCHAR(20) NOT NULL DEFAULT '' AFTER discipline"); } catch(Exception $e) {}
     try { $pdo->exec("ALTER TABLE kk_pilots ADD COLUMN results TEXT AFTER bio"); } catch(Exception $e) {}
+
+    // Table messages contact
+    if (!$pdo->query("SHOW TABLES LIKE 'kk_messages'")->fetchColumn()) {
+        $pdo->exec("CREATE TABLE kk_messages (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            motif VARCHAR(50) NOT NULL DEFAULT '',
+            name VARCHAR(200) NOT NULL DEFAULT '',
+            email VARCHAR(200) NOT NULL DEFAULT '',
+            phone VARCHAR(50) NOT NULL DEFAULT '',
+            message TEXT,
+            read_at DATETIME DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    // Statut paiement étendu
+    try { $pdo->exec("ALTER TABLE kk_appointments MODIFY COLUMN payment_status ENUM('none','pending_payment','link_sent','partial','paid') NOT NULL DEFAULT 'none'"); } catch(Exception $e) {}
 
     // Colonnes prix sur appointments
         try { $pdo->exec("ALTER TABLE kk_appointments ADD COLUMN price_estimate DECIMAL(10,2) DEFAULT NULL"); } catch(Exception $e) {}

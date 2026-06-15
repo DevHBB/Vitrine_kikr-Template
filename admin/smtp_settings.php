@@ -10,6 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'ovh_service_name',
     ];
     foreach ($fields as $k) set_setting($k, trim($_POST[$k] ?? ''));
+    // reCAPTCHA
+    set_setting('recaptcha_site',   trim($_POST['recaptcha_site']   ?? ''));
+    set_setting('recaptcha_secret', trim($_POST['recaptcha_secret'] ?? ''));
+    set_setting('recaptcha_score',  trim($_POST['recaptcha_score']  ?? '0.5'));
     // Mot de passe SMTP : ne pas effacer si vide
     if (!empty($_POST['smtp_pass'])) set_setting('smtp_pass', trim($_POST['smtp_pass']));
     set_setting('smtp_enabled', isset($_POST['smtp_enabled']) ? '1' : '0');
@@ -147,6 +151,40 @@ if (isset($_POST['send_test'])) {
       <div class="fgrp"><label>Auth Token</label><input type="password" name="sms_api_secret" value="<?= h(get_setting('sms_api_secret','')) ?>"></div>
       <div class="fgrp"><label>Numéro expéditeur</label><input type="text" name="sms_sender" value="<?= h(get_setting('sms_sender','')) ?>" placeholder="+33600000000"></div>
     </div>
+  </div>
+</div>
+
+<!-- reCAPTCHA -->
+<div class="card">
+  <div class="card-head"><h2><span class="icon">🤖</span> reCAPTCHA v3 (anti-spam)</h2></div>
+  <p class="card-hint">
+    Protège vos formulaires (contact, RDV, newsletter) contre les bots et le spam.<br>
+    reCAPTCHA v3 est <strong>invisible</strong> — aucun clic requis pour vos visiteurs.<br>
+    <a href="https://www.google.com/recaptcha/admin/create" target="_blank" style="color:var(--red);">Obtenir des clés gratuitement sur Google →</a>
+  </p>
+  <div class="g2">
+    <div class="fgrp">
+      <label>Clé du site (Site Key)</label>
+      <input type="text" name="recaptcha_site" value="<?= h(get_setting('recaptcha_site','')) ?>" placeholder="6Lc…">
+      <span class="hint">Utilisée dans le HTML côté client</span>
+    </div>
+    <div class="fgrp">
+      <label>Clé secrète (Secret Key)</label>
+      <input type="password" name="recaptcha_secret" value="<?= h(get_setting('recaptcha_secret','')) ?>" placeholder="6Lc…">
+      <span class="hint">Utilisée côté serveur pour vérifier</span>
+    </div>
+    <div class="fgrp">
+      <label>Score minimum (0.0 à 1.0)</label>
+      <input type="number" name="recaptcha_score" value="<?= h(get_setting('recaptcha_score','0.5')) ?>" step="0.1" min="0" max="1">
+      <span class="hint">0.5 recommandé. Plus élevé = plus strict.</span>
+    </div>
+  </div>
+  <div style="background:#f0fdf4;border-radius:8px;padding:12px 14px;font-size:12px;color:#15803d;margin-top:4px;line-height:1.7;">
+    <strong>Comment obtenir vos clés :</strong><br>
+    1. Allez sur <a href="https://www.google.com/recaptcha/admin/create" target="_blank" style="color:#15803d;">google.com/recaptcha/admin/create</a><br>
+    2. Choisissez <strong>reCAPTCHA v3</strong><br>
+    3. Ajoutez votre domaine (ex: monsite.fr)<br>
+    4. Copiez les deux clés ci-dessus
   </div>
 </div>
 

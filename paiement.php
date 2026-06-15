@@ -148,7 +148,17 @@ require_once __DIR__ . '/layout/header.php';
     <div class="pmt-method" onclick="selM(this,'livraison')">
       <input type="radio" name="payment_method" value="livraison" style="display:none;">
       <span class="pmt-ico">🤝</span>
-      <div><div>Paiement à la livraison</div><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
+      <div><div>Paiement en main propre</div><div style="font-size:11px;color:#888;">Espèces, chèque ou CB sur place</div></div>
+    </div>
+
+    <div id="livraison-msg" style="display:none;background:#f0fdf4;border-radius:12px;padding:14px;margin-top:4px;border:1.5px solid #86efac;">
+      <div style="font-size:13px;font-weight:800;color:#15803d;margin-bottom:5px;">✅ On vous attend !</div>
+      <p style="font-size:12px;color:#166534;line-height:1.7;margin:0;">
+        Notre équipe vous attend pour le règlement en main propre.<br>
+        <strong>Votre moto ne pourra être déposée qu'après notre confirmation.</strong><br>
+        Si vous souhaitez venir en même temps, appelez-nous avant :<br>
+        <a href="tel:<?= h(get_setting('site_phone')) ?>" style="color:#15803d;font-weight:700;"><?= h(get_setting('site_phone')) ?></a>
+      </p>
     </div>
 
     <!-- Stripe element -->
@@ -169,14 +179,22 @@ require_once __DIR__ . '/layout/header.php';
 </div>
 
 <?php if(!$success && empty($error)): ?>
+<?php if($stripe_pk):  ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
+<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
 <script>
 function selM(el, method) {
-  document.querySelectorAll('.pmt-method').forEach(m => m.classList.remove('sel'));
+  document.querySelectorAll('.pmt-method').forEach(function(m){ m.classList.remove('sel'); });
   el.classList.add('sel');
   el.querySelector('input').checked = true;
-  document.getElementById('stripe-box').style.display  = method === 'stripe'  ? 'block' : 'none';
-  document.getElementById('paypal-box').style.display  = method === 'paypal'  ? 'block' : 'none';
-  document.getElementById('pmt-btn').style.display     = method === 'paypal'  ? 'none'  : 'block';
+  document.getElementById('stripe-box').style.display   = method === 'stripe'   ? 'block' : 'none';
+  document.getElementById('paypal-box').style.display   = method === 'paypal'   ? 'block' : 'none';
+  document.getElementById('pmt-btn').style.display      = method === 'paypal'   ? 'none'  : 'block';
+  var lm = document.getElementById('livraison-msg');
+  if (lm) lm.style.display = method === 'livraison' ? 'block' : 'none';
+  var btn = document.getElementById('pmt-btn');
+  if (method === 'livraison') btn.textContent = 'Je paierai en main propre →';
+  else if (method === 'virement') btn.textContent = 'Confirmer le virement →';
+  else btn.textContent = 'Valider le paiement';
 }
 <?php if($stripe_pk): ?>
 const stripe   = Stripe('<?= h($stripe_pk) ?>');
@@ -206,8 +224,6 @@ paypal.Buttons({
 }).render('#paypal-container');
 <?php endif; ?>
 </script>
-<?php if($stripe_pk):  ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
-<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/layout/footer.php'; ?>

@@ -189,7 +189,7 @@ function create_payment_link(int $invoice_id, float $amount, int $expires_days=7
     $token=bin2hex(random_bytes(32));
     db()->prepare('INSERT INTO kk_payment_links(token,invoice_id,amount,expires_at) VALUES(?,?,?,?)')
        ->execute([$token,$invoice_id,$amount,date('Y-m-d H:i:s',strtotime("+{$expires_days} days"))]);
-    return BASE_URL.'/pay.php?t='.$token;
+    return site_url('/pay.php?t='.$token);
 }
 
 // ============================================================
@@ -249,7 +249,7 @@ function create_rdv_payment_link(int $rdv_id, float $amount): string {
     $token = bin2hex(random_bytes(32));
     db()->prepare("UPDATE kk_appointments SET payment_link_token=?, payment_status='link_sent' WHERE id=?")
        ->execute([$token, $rdv_id]);
-    return BASE_URL . '/payer.php?t=' . $token . '&a=' . number_format($amount, 2, '.', '');
+    return site_url('/payer.php?t=' . $token . '&a=' . number_format($amount, 2, '.', ''));
 }
 
 // ============================================================

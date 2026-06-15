@@ -47,12 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare('INSERT INTO kk_payment_links(token,invoice_id,amount,expires_at) VALUES(?,?,?,?)')
            ->execute([$token, $invoice_id, $amount, $expires]);
 
-        $link = (isset($_SERVER['HTTP_HOST']) ? 'http://'.$_SERVER['HTTP_HOST'] : '') . BASE_URL . '/paiement.php?t=' . $token;
+        $link = site_url('/paiement.php?t=' . $token);
 
         // Envoyer email si demandé
         if (!empty($_POST['send_email']) && $client_email) {
             $sname = get_setting('site_name');
-            $subj  = "💳 Lien de paiement — $sname";
+            $subj  = "Lien de paiement — $sname";
             $body  = "Bonjour $client_name,\r\n\r\n"
                    . "$sname vous envoie un lien de paiement sécurisé.\r\n\r\n"
                    . "Montant : " . number_format($amount, 2, ',', ' ') . " €\r\n"
@@ -190,7 +190,7 @@ $links = db()->query("
         <?= $used ? '✅ Payé' : ($expired ? '⏰ Expiré' : '🔗 Actif') ?>
       </span>
       <?php if(!$used && !$expired): ?>
-      <button onclick="navigator.clipboard.writeText('<?= (isset($_SERVER['HTTP_HOST'])?'http://'.$_SERVER['HTTP_HOST']:'').BASE_URL ?>/paiement.php?t=<?= h($pl['token']) ?>').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})"
+      <button onclick="navigator.clipboard.writeText('<?= site_url() ?>/paiement.php?t=<?= h($pl['token']) ?>').then(()=>{this.textContent='✅';setTimeout(()=>this.textContent='📋',1500)})"
               class="btn btn-ghost btn-sm" title="Copier le lien">📋</button>
       <?php endif; ?>
       <?php if($pl['inv_number']): ?>

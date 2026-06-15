@@ -190,7 +190,7 @@ $statuses = [
     $rdv_price_fin  = $rdv['price_final']    ?? null;
     $rdv_pay_status = $rdv['payment_status'] ?? 'none';
     $rdv_pay_token  = $rdv['payment_link_token'] ?? '';
-    $pay_statuses   = ['none'=>'—','link_sent'=>'🔗 Lien envoyé','partial'=>'🟡 Partiel','paid'=>'✅ Payé'];
+    $pay_statuses   = ['none'=>'—','pending_payment'=>'💳 En attente de paiement','link_sent'=>'🔗 Lien envoyé','partial'=>'🟡 Partiel','paid'=>'✅ Payé'];
     ?>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
       <div class="fgrp">
@@ -218,9 +218,10 @@ $statuses = [
     <?php if($rdv_pay_token): ?>
     <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;">
       <strong>Lien actif :</strong><br>
-      <span style="word-break:break-all;color:#1d4ed8;"><?= BASE_URL ?>/payer.php?t=<?= h($rdv_pay_token) ?></span>
-      <button type="button" onclick="navigator.clipboard.writeText('<?= BASE_URL ?>/payer.php?t=<?= h($rdv_pay_token) ?>').then(()=>{this.textContent='✅ Copié!';setTimeout(()=>this.textContent='📋 Copier',2000)})" class="btn btn-ghost btn-sm" style="margin-top:6px;">📋 Copier</button>
-      <a href="mailto:<?= h($rdv['client_email']) ?>?subject=Lien de paiement — Kik'r&body=Bonjour <?= h($rdv['client_name']) ?>,%0A%0AVoici votre lien de paiement :%0A<?= BASE_URL ?>/payer.php?t=<?= h($rdv_pay_token) ?>" class="btn btn-dark btn-sm" style="margin-top:6px;margin-left:4px;">📧 Envoyer par email</a>
+      <?php $pay_link_url = site_url('/payer.php?t='.$rdv_pay_token); ?>
+      <span style="word-break:break-all;color:#1d4ed8;"><?= h($pay_link_url) ?></span>
+      <button type="button" onclick="navigator.clipboard.writeText('<?= h($pay_link_url) ?>').then(()=>{this.textContent='✅ Copié!';setTimeout(()=>this.textContent='📋 Copier',2000)})" class="btn btn-ghost btn-sm" style="margin-top:6px;">📋 Copier</button>
+      <a href="mailto:<?= h($rdv['client_email']) ?>?subject=Lien de paiement — Kik'r&body=Bonjour <?= h($rdv['client_name']) ?>,%0A%0AVoici votre lien de paiement :%0A<?= urlencode($pay_link_url) ?>" class="btn btn-dark btn-sm" style="margin-top:6px;margin-left:4px;">📧 Envoyer par email</a>
     </div>
     <?php endif; ?>
   </div>
@@ -294,7 +295,9 @@ function genPayLink() {
       .then(d => {
         if (d.link) {
           navigator.clipboard.writeText(d.link);
-          alert('✅ Lien généré et copié !\n\n' + d.link);
+          alert('✅ Lien généré et copié !
+
+' + d.link);
           location.reload();
         }
       });
