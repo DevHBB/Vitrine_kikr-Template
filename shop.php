@@ -535,7 +535,7 @@ document.getElementById('add-form')?.addEventListener('submit', function(e) {
         <input type="checkbox" name="newsletter_opt" value="1" checked style="accent-color:#ed0c0f;">
         Recevoir les offres et actualités par email (désinscription possible à tout moment)
       </label>
-      <button type="submit" class="co-btn" style="margin-top:4px;">Confirmer la commande →</button>
+      <button type="submit" class="co-btn" id="co-submit-btn" style="margin-top:4px;">Confirmer la commande →</button>
     </form>
   </div>
 </div>
@@ -549,10 +549,21 @@ function updateShipping(v) {
   // sync aussi le select
   document.querySelectorAll('[name="shipping"]').forEach(s => { if(s !== document.querySelector('[name="shipping"]')) s.value = v; });
 }
-function selPay(el, val) {
+function selPay(method) {
+  // Mettre à jour le champ caché
+  document.getElementById('payment_method_input').value = method;
+  // Visuels
   document.querySelectorAll('.pay-opt').forEach(o => o.classList.remove('sel'));
-  el.classList.add('sel');
-  el.querySelector('input').checked = true;
+  var el = document.getElementById('opt-' + method);
+  if (el) el.classList.add('sel');
+  // Afficher/cacher les zones spécifiques
+  var ppWrap = document.getElementById('paypal-btn-wrap');
+  var strBox = document.getElementById('stripe-box');
+  var subBtn = document.getElementById('co-submit-btn');
+  if (ppWrap) ppWrap.style.display = method === 'paypal'  ? 'block' : 'none';
+  if (strBox) strBox.style.display = method === 'stripe'  ? 'block' : 'none';
+  // Cacher le bouton submit pour PayPal (les boutons PayPal le remplacent)
+  if (subBtn) subBtn.style.display = method === 'paypal'  ? 'none'  : 'block';
 }
 </script>
 
@@ -669,4 +680,60 @@ function selPay(el, val) {
 </button>
 <?php endif; ?>
 
+<?php if($show_cart && !empty($cart)): ?>
+<?php if($stripe_pk):  ?><script src="https://js.stripe.com/v3/"></script><?php endif; ?>
+<?php if($paypal_cid): ?><script src="https://www.paypal.com/sdk/js?client-id=<?= h($paypal_cid) ?>&currency=EUR"></script><?php endif; ?>
+<script>
+<?php if($stripe_pk): ?>
+var stripeInst = Stripe('<?= h($stripe_pk) ?>');
+var stripeEl   = stripeInst.elements().create('card', {style:{base:{fontSize:'14px'}}});
+stripeEl.mount('#stripe-el');
+document.getElementById('checkout-form')?.addEventListener('submit', async function(e) {
+  if (document.getElementById('payment_method_input').value === 'stripe') {
+    e.preventDefault();
+    var r = await stripeInst.createPaymentMethod({type:'card', card:stripeEl});
+    if (r.error) { document.getElementById('stripe-err').textContent = r.error.message; return; }
+    var inp = document.createElement('input'); inp.type='hidden'; inp.name='stripe_pm'; inp.value=r.paymentMethod.id;
+    this.appendChild(inp); this.submit();
+  }
+});
+<?php endif; ?>
+<?php if($paypal_cid): ?>
+window.addEventListener('load', function() {
+  if (typeof paypal === 'undefined') return;
+  paypal.Buttons({
+    createOrder: function(data, actions) {
+      // Valider le formulaire d'abord
+      var form = document.getElementById('checkout-form');
+      var name  = form.querySelector('[name="name"]').value.trim();
+      var email = form.querySelector('[name="email"]').value.trim();
+      if (!name || !email) { alert('Merci de remplir votre nom et email avant de payer.'); return false; }
+      if (!form.querySelector('[name="accept_cgv"]').checked) { alert('Vous devez accepter les CGV.'); return false; }
+      var ship = parseFloat(form.querySelector('[name="shipping"]').value) || 0;
+      return actions.order.create({
+        purchase_units: [{
+          amount: { value: (<?= $cart_total ?> + (parseFloat(document.querySelector('[name='shipping']')?.value)||0)).toFixed(2) },
+          description: 'Commande <?= h(get_setting('site_name')) ?>'
+        }]
+      });
+    },
+    onApprove: function(data, actions) {
+      return actions.order.capture().then(function(details) {
+        // Ajouter l'order ID et soumettre le formulaire
+        var f = document.getElementById('checkout-form');
+        var i = document.createElement('input'); i.type='hidden'; i.name='paypal_order_id'; i.value=data.orderID;
+        f.appendChild(i);
+        document.getElementById('payment_method_input').value = 'paypal';
+        f.submit();
+      });
+    },
+    onError: function(err) {
+      console.error('PayPal error:', err);
+      alert('Erreur PayPal. Veuillez choisir un autre moyen de paiement.');
+    }
+  }).render('#paypal-button-container-shop');
+});
+<?php endif; ?>
+</script>
+<?php endif; ?>
 <?php require_once __DIR__ . '/layout/footer.php'; ?>
