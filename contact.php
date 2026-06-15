@@ -153,8 +153,8 @@ require_once __DIR__ . '/layout/header.php';
       <div class="rdv-banner-btn">Voir le planning →</div>
     </a>
 
-    <!-- Formulaire de contact (caché jusqu'au choix) -->
-    <div class="contact-form-area <?= !empty($_POST['motif'])?'open':'' ?>" id="form-area">
+    <!-- Formulaire : masqué si motif = rdv -->
+    <div class="contact-form-area <?= (!empty($_POST['motif']) && ($_POST['motif']??''!='rdv'))?'open':'' ?>" id="form-area" style="<?= ($_POST['motif']??'')==='rdv'?'display:none;':'' ?>">
       <?php if(!empty($error)): ?>
       <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;font-size:13px;color:#dc2626;margin-bottom:14px;"><?= h($error) ?></div>
       <?php endif; ?>
@@ -232,17 +232,25 @@ function selectMotif(motif) {
 
   // RDV banner
   var banner = document.getElementById('rdv-banner');
+  var area   = document.getElementById('form-area');
+
   if (motif === 'rdv') {
+    // Afficher uniquement la bannière, PAS le formulaire
     banner.classList.add('open');
-  } else {
-    banner.classList.remove('open');
+    area.classList.remove('open');
+    area.style.display = 'none';
+    setTimeout(function(){
+      banner.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 200);
+    return;
   }
 
-  // Formulaire
-  var area = document.getElementById('form-area');
+  // Autres motifs : cacher bannière, ouvrir formulaire
+  banner.classList.remove('open');
+  area.style.display = '';
   area.classList.add('open');
 
-  // Placeholder et bouton
+  // Placeholder et bouton adaptés
   if (motifPlaceholders[motif]) {
     document.getElementById('msg-field').placeholder = motifPlaceholders[motif];
   }
@@ -250,7 +258,6 @@ function selectMotif(motif) {
     document.getElementById('cf-btn').textContent = motifBtns[motif];
   }
 
-  // Scroll vers formulaire
   setTimeout(function(){
     area.scrollIntoView({behavior:'smooth', block:'nearest'});
   }, 200);

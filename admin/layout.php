@@ -47,6 +47,8 @@ $menu = [
     ['id'=>'legal',   'label'=>'Pages légales',  'href'=>BASE_URL.'/admin/legal.php',   'icon'=>'<path d="M12 1l3 6 6 .75-4.5 4.25L18 18l-6-3-6 3 1.5-5.95L3 7.75 9 7z"/>'],
     ['sep'=>'Configuration'],
     ['id'=>'modules',           'label'=>'Modules & Nav',       'href'=>BASE_URL.'/admin/modules.php',           'icon'=>'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v7h-7z"/>'],
+    ['sep'=>'Système'],
+    ['id'=>'update',   'label'=>'Mise à jour',   'href'=>BASE_URL.'/admin/update.php',  'icon'=>'<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'],
     ['sep'=>'Compte'],
     ['id'=>'password',          'label'=>'Mot de passe',        'href'=>BASE_URL.'/admin/password.php',         'icon'=>'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'],
 ];
