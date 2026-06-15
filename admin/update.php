@@ -33,14 +33,14 @@ function github_get(string $url): ?array {
 
 function is_protected(string $rel_path, array $protected): bool {
     foreach ($protected as $p) {
-        if (str_starts_with($rel_path, $p)) return true;
+        if (strpos($rel_path, $p) === 0) return true;
     }
     return false;
 }
 
 function extract_zip_safe(string $zip_path, string $dest, array $protected, string $root): array {
     $zip = new ZipArchive();
-    if ($zip->open($zip_path) !== true) return ['ok' => false, 'msg' => 'Impossible d'ouvrir le ZIP.'];
+    if ($zip->open($zip_path) !== true) return ['ok' => false, 'msg' => "Impossible d'ouvrir le ZIP."];
 
     $skipped  = [];
     $updated  = [];
@@ -49,7 +49,7 @@ function extract_zip_safe(string $zip_path, string $dest, array $protected, stri
     // Détecter le dossier racine du ZIP
     for ($i = 0; $i < $zip->numFiles; $i++) {
         $name = $zip->getNameIndex($i);
-        if (substr_count(rtrim($name, '/'), '/') === 0 && str_ends_with($name, '/')) {
+        if (substr_count(rtrim($name, '/'), '/') === 0 && substr($name, -1) === '/') {
             $root_dir = $name;
             break;
         }
@@ -58,7 +58,7 @@ function extract_zip_safe(string $zip_path, string $dest, array $protected, stri
     for ($i = 0; $i < $zip->numFiles; $i++) {
         $name    = $zip->getNameIndex($i);
         $rel     = $root_dir ? substr($name, strlen($root_dir)) : $name;
-        if (!$rel || str_ends_with($rel, '/')) continue; // dossier vide
+        if (!$rel || substr($rel, -1) === '/') continue; // dossier vide
 
         if (is_protected($rel, $protected)) {
             $skipped[] = $rel;

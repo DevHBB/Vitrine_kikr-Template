@@ -195,7 +195,7 @@ $cur_gallery = $cur_type === 'gallery' ? jd($eb['content'] ?? '[]', []) : [];
         </div>
         <div class="fgrp" style="margin-bottom:10px;">
           <label>Texte / Contenu ✍️</label>
-          <textarea name="content_text" style="min-height:140px;width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;"><?= h(in_array($cur_type,['text','cta'])?($eb['content']??')':'') ?></textarea>
+          <textarea name="content_text" style="min-height:140px;width:100%;border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;"><?= h(in_array($cur_type, ['text','cta']) ? ($eb['content'] ?? '') : '') ?></textarea>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="fgrp">

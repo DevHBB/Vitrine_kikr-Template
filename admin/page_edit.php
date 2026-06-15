@@ -213,18 +213,18 @@ $blk_labels = [
     <?php foreach ($blocks as $i => $blk):
       $type  = $blk['type'] ?? 'text';
       $label = $blk_labels[$type] ?? $type;
-      $preview = match($type) {
-        'heading'     => $blk['text'] ?? '',
-        'text'        => mb_substr($blk['content']??'', 0, 60),
-        'image'       => $blk['src'] ?? '(image)',
-        'cta'         => $blk['title'] ?? '',
-        'gallery'     => count($blk['images']??[]) . ' image(s)',
-        'columns'     => count($blk['cols']??[]) . ' colonne(s)',
-        'video'       => $blk['url'] ?? '',
-        'accordion'   => count($blk['items']??[]) . ' entrée(s)',
-        'banner_hero' => $blk['title'] ?? '',
-        default       => '',
-      };
+      switch($type) {
+        case 'heading':     $preview = $blk['text'] ?? ''; break;
+        case 'text':        $preview = mb_substr($blk['content']??'', 0, 60); break;
+        case 'image':       $preview = $blk['src'] ?? '(image)'; break;
+        case 'cta':         $preview = $blk['title'] ?? ''; break;
+        case 'gallery':     $preview = count($blk['images']??[]) . ' image(s)'; break;
+        case 'columns':     $preview = count($blk['cols']??[]) . ' colonne(s)'; break;
+        case 'video':       $preview = $blk['url'] ?? ''; break;
+        case 'accordion':   $preview = count($blk['items']??[]) . ' entrée(s)'; break;
+        case 'banner_hero': $preview = $blk['title'] ?? ''; break;
+        default:            $preview = '';
+      }
     ?>
     <div class="blk-item" id="bi-<?= $i ?>">
       <input type="hidden" name="blk_type[]" value="<?= h($type) ?>">
