@@ -391,6 +391,8 @@ function ensure_tables(): void {
 
     // Statut paiement étendu
     try { $pdo->exec("ALTER TABLE kk_appointments MODIFY COLUMN payment_status ENUM('none','pending_payment','link_sent','partial','paid') NOT NULL DEFAULT 'none'"); } catch(Exception $e) {}
+    // Fix: invoice_id doit accepter NULL (liens de paiement RDV sans facture)
+    try { $pdo->exec("ALTER TABLE kk_payment_links MODIFY COLUMN invoice_id INT UNSIGNED DEFAULT NULL"); } catch(Exception $e) {}
 
     // Colonnes prix sur appointments
         try { $pdo->exec("ALTER TABLE kk_appointments ADD COLUMN price_estimate DECIMAL(10,2) DEFAULT NULL"); } catch(Exception $e) {}
@@ -457,7 +459,11 @@ function get_setting(string $key, string $default = ''): string {
     if (!isset($cache[$key])) {
         $s = db()->prepare('SELECT val FROM kk_settings WHERE `key`=?');
         $s->execute([$key]);
-        $cache[$key] = $s->fetchColumn() ?: $default;
+        $val = $s->fetchColumn();
+        // fetchColumn() renvoie false (pas '0') si aucune ligne trouvée.
+        // Ne JAMAIS utiliser ?: ici : la string '0' est falsy en PHP et
+        // serait remplacée par défaut, cassant tous les toggles réglés sur "0".
+        $cache[$key] = ($val !== false) ? $val : $default;
     }
     return $cache[$key];
 }

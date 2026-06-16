@@ -746,7 +746,7 @@ function initPayPal() {
       var ship = parseFloat(form.querySelector('[name="shipping"]').value) || 0;
       return actions.order.create({
         purchase_units: [{
-          amount: { value: (<?= $cart_total ?> + (parseFloat(document.querySelector('[name='shipping']')?.value)||0)).toFixed(2) },
+          amount: { value: (<?= $cart_total ?> + (parseFloat(document.getElementById('ship-hidden').value)||0)).toFixed(2) },
           description: 'Commande <?= h(get_setting('site_name')) ?>'
         }]
       });
@@ -767,9 +767,7 @@ function initPayPal() {
     }
   }).render('#paypal-btn-shop');
 }
-// Tenter d'init au chargement
-if (document.readyState === 'complete') { initPayPal(); }
-else { window.addEventListener('load', initPayPal); }
+// PayPal s'initialise uniquement au clic sur l'option PayPal (via shopSelPay)
 <?php endif; ?>
 </script>
 <?php endif; ?>

@@ -207,15 +207,18 @@ $scolor = '#ed0c0f';
 var blocks   = [];
 var selIdx   = -1;
 var scolor   = '<?= $scolor ?>';
-var sname    = '<?= h($sname) ?>';
-var logoHtml = '<?= h(get_setting('site_logo') ? '<img src="'.site_url(get_setting('site_logo')).'" style="height:48px;object-fit:contain;" alt="">' : '<span style="font-size:22px;font-weight:900;color:white;">'.h($sname).'</span>') ?>';
+var sname    = '<?= addslashes($sname) ?>';
+var sLogoUrl = '<?= get_setting('site_logo') ? addslashes(site_url(get_setting('site_logo'))) : '' ?>';
+var logoHtml = sLogoUrl
+  ? '<img src="' + sLogoUrl + '" style="height:48px;object-fit:contain;" alt="">'
+  : '<span style="font-size:22px;font-weight:900;color:white;">' + sname + '</span>';
 
 // Charger template existant si dispo
 <?php if($tpl): ?>
 (function() {
   // On ne peut pas récupérer les blocs depuis le HTML généré, mais on peut charger un état initial minimal
   // Pour un template existant, on affiche un bloc texte avec le contenu
-  blocks = [{type:'header'},{type:'text',title:'<?= addslashes(h($sname)) ?> — Newsletter',content:'Bonjour {{name}},\n\nRetrouvez nos actualités.','dark':false},{type:'button',label:'Découvrir →',url:'<?= site_url('/') ?>','dark':false},{type:'footer'}];
+  blocks = [{type:'header'},{type:'text',title:'<?= addslashes($sname) ?> — Newsletter',content:'Bonjour {{name}},\n\nRetrouvez nos actualités.','dark':false},{type:'button',label:'Découvrir →',url:'<?= site_url('/') ?>','dark':false},{type:'footer'}];
   renderAll();
 })();
 <?php endif; ?>

@@ -188,15 +188,17 @@ $statuses = [
     <p>Code envoyé à <strong><?= h($otp_email ?? '') ?></strong>.<br>Vérifiez vos spams.</p>
     <?php if($success): ?><div class="mc-ok">✅ <?= h($success) ?></div><?php endif; ?>
     <?php if($error):   ?><div class="mc-err"><?= h($error) ?></div><?php endif; ?>
-    <form method="POST">
-      <!-- Email dans un champ hidden POST - pas dans l'URL, pas dans la session -->
+    <form method="POST" id="otp-form">
+      <!-- Email dans un champ hidden POST -->
       <input type="hidden" name="otp_email" value="<?= h($otp_email ?? '') ?>">
+      <!-- verify_otp toujours présent même si soumission JS -->
+      <input type="hidden" name="verify_otp" value="1">
       <div class="mc-field mc-otp">
         <label>Code reçu</label>
         <input type="text" name="code" id="otp-inp" inputmode="numeric"
                maxlength="6" autocomplete="one-time-code" autofocus placeholder="000000">
       </div>
-      <button type="submit" name="verify_otp" value="1" class="mc-btn mc-btn-red" id="otp-btn">
+      <button type="submit" class="mc-btn mc-btn-red" id="otp-btn">
         Se connecter →
       </button>
     </form>

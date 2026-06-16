@@ -181,6 +181,7 @@ $bank_iban  = get_setting('bank_iban', '');
       <div id="stripe-err" style="color:#dc2626;font-size:12px;margin-top:6px;"></div>
     </div>
     <!-- Message paiement sur place -->
+    <?php if(get_setting('payment_allow_onsite','1')==='1'): ?>
     <div id="livraison-msg" style="display:none;background:#f0fdf4;border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid #86efac;">
       <div style="font-size:14px;font-weight:800;color:#15803d;margin-bottom:6px;">✅ Parfait, on vous attend !</div>
       <p style="font-size:13px;color:#166534;line-height:1.7;margin:0;">
@@ -190,6 +191,7 @@ $bank_iban  = get_setting('bank_iban', '');
         <a href="tel:<?= h(get_setting('site_phone')) ?>" style="color:#15803d;font-weight:700;"><?= h(get_setting('site_phone')) ?></a>
       </p>
     </div>
+    <?php endif; ?>
 
     <!-- PayPal boutons -->
     <!-- PayPal box - toujours dans le DOM, jamais caché au moment du render -->

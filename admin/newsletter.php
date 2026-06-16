@@ -132,16 +132,48 @@ $total_sent_all=array_sum(array_column($campaigns,'total_sent'));$total_opens=ar
         </select>
       </div>
       <div class="fgrp full"><label>Sujet de l'email *</label><input type="text" name="csubject" id="csubject" value="<?= h($ec_data['subject']??'') ?>" required></div>
-      <div class="fgrp full"><label>Corps de l'email (HTML)</label>
-        <textarea name="cbody_html" id="cbody_html" style="min-height:200px;font-family:monospace;font-size:12px;"><?= h($ec_data['body_html']??'') ?></textarea>
-        <span class="hint">Variables disponibles : {{name}}, {{email}}</span>
+
+      <div class="fgrp full">
+        <label>Aperçu de l'email</label>
+        <div id="email-preview-wrap" style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden;background:#f0f0ee;">
+          <iframe id="email-preview" style="width:100%;height:420px;border:none;display:block;"></iframe>
+        </div>
+        <span class="hint">
+          Choisissez un template ci-dessus ou
+          <a href="<?= BASE_URL ?>/admin/newsletter_editor.php<?= ($ec_data['template_id']??0)?'?id='.$ec_data['template_id']:'' ?>" target="_blank" style="color:var(--red);font-weight:700;">créez-en un nouveau avec l'éditeur visuel →</a>
+        </span>
       </div>
+
+      <details style="margin:4px 0 10px;">
+        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);">⚙️ Modifier le code HTML directement (avancé)</summary>
+        <div class="fgrp full" style="margin-top:10px;">
+          <textarea name="cbody_html" id="cbody_html" style="min-height:200px;font-family:monospace;font-size:12px;" oninput="updatePreview()"><?= h($ec_data['body_html']??'') ?></textarea>
+          <span class="hint">Variables disponibles : {{name}}, {{email}}</span>
+        </div>
+      </details>
+
       <div class="fgrp full"><label>Texte SMS (160 car. max)</label><input type="text" name="csms_text" value="<?= h($ec_data['sms_text']??'') ?>" maxlength="160" placeholder="Message SMS…"></div>
     </div>
     <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
   </form>
 </div>
-<script>function loadTemplate(sel){var o=sel.options[sel.selectedIndex];if(o.value){document.getElementById('cbody_html').value=o.dataset.html||'';document.getElementById('csubject').value=o.dataset.subj||'';}}</script>
+<script>
+function loadTemplate(sel){
+  var o=sel.options[sel.selectedIndex];
+  if(o.value){
+    document.getElementById('cbody_html').value=o.dataset.html||'';
+    document.getElementById('csubject').value=o.dataset.subj||'';
+    updatePreview();
+  }
+}
+function updatePreview(){
+  var html = document.getElementById('cbody_html').value;
+  var demo = html.split('{{name}}').join('Jean').split('{{email}}').join('jean@mail.fr');
+  var f = document.getElementById('email-preview');
+  f.srcdoc = demo;
+}
+document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
 <?php endif; ?>
 
 <?php elseif($tab==='subscribers'): ?>
@@ -180,13 +212,22 @@ $total_sent_all=array_sum(array_column($campaigns,'total_sent'));$total_opens=ar
 <?php elseif($tab==='templates'): ?>
 <!-- TEMPLATES -->
 <div class="card">
-  <div class="card-head"><h2>📝 Templates email</h2><a href="?tab=templates&edit_t=0" class="btn btn-primary btn-sm">+ Nouveau</a></div>
+  <div class="card-head">
+    <h2>📝 Templates email</h2>
+    <div style="display:flex;gap:8px;">
+      <a href="<?= BASE_URL ?>/admin/newsletter_editor.php" class="btn btn-primary btn-sm">🎨 Créer avec l'éditeur visuel</a>
+      <a href="?tab=templates&edit_t=0" class="btn btn-ghost btn-sm">+ HTML brut (avancé)</a>
+    </div>
+  </div>
   <div class="item-list">
   <?php foreach($templates as $t): ?>
   <div class="item-row">
     <div class="item-row-name"><?= h($t['name']) ?></div>
     <div class="item-row-sub"><?= h($t['subject']) ?></div>
-    <div class="item-row-actions"><a href="?tab=templates&edit_t=<?= $t['id'] ?>" class="btn btn-secondary btn-sm">✏️</a></div>
+    <div class="item-row-actions">
+      <a href="<?= BASE_URL ?>/admin/newsletter_editor.php?id=<?= $t['id'] ?>" class="btn btn-secondary btn-sm">🎨 Éditeur visuel</a>
+      <a href="?tab=templates&edit_t=<?= $t['id'] ?>" class="btn btn-ghost btn-sm">HTML brut</a>
+    </div>
   </div>
   <?php endforeach; ?>
   </div>
